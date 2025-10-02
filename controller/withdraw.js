@@ -103,7 +103,7 @@ exports.adminList = async (req, res) => {
     const skip = (pageNumber - 1) * limitNumber;
 
     const tx = await Withdraw.find(filter)
-      .populate("userId", "fullName email")
+      .populate("userId", "name email")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limitNumber);
@@ -243,7 +243,7 @@ exports.createWithdrawal = async (req, res) => {
       fundType: "crypto",
       amount: -amount,
       transactionType: "withdraw",
-      transactionStatus: "completed"
+      transactionStatus: "completed",
     });
 
     const withdrawal = await Withdraw.create({

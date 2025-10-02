@@ -67,7 +67,7 @@ exports.getBoosterStakes = async (req, res) => {
 
     const [stakes, totalCount, boostedStats] = await Promise.all([
       BoosterIncome.find(filter)
-        .populate("userId", "fullName email")
+        .populate("userId", "name email")
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limitNumber),

@@ -1,8 +1,8 @@
-const MonthlyIncome = require('../models/MonthlyIncome');
-const Transaction = require('../models/Transactions');
-const User = require('../models/User');
-const Wallet = require('../models/Wallet');
-const getLevelIncomeOriginal = require('../utils/getLevel');
+const MonthlyIncome = require("../models/MonthlyIncome");
+const Transaction = require("../models/Transactions");
+const User = require("../models/User");
+const Wallet = require("../models/Wallet");
+const getLevelIncomeOriginal = require("../utils/getLevel");
 
 // Calculate monthly income for a specific user and month
 const calculateMonthlyIncome = async (userId, month, year) => {
@@ -18,8 +18,8 @@ const calculateMonthlyIncome = async (userId, month, year) => {
       transactionType: "trading",
       createdAt: {
         $gte: startDate,
-        $lte: endDate
-      }
+        $lte: endDate,
+      },
     });
 
     let monthlyBet = 0;
@@ -29,15 +29,15 @@ const calculateMonthlyIncome = async (userId, month, year) => {
     let conver99PercentTo100Percent = 0;
 
     // Calculate totals from transactions
-    transactions.forEach(transaction => {
+    transactions.forEach((transaction) => {
       if (transaction.betAmount) {
         monthlyBet += Math.abs(transaction.betAmount);
       }
 
-      if (transaction.result === 'win') {
+      if (transaction.result === "win") {
         totalWins += 1;
         monthlyIncome += transaction.amount || 0;
-      } else if (transaction.result === 'loss') {
+      } else if (transaction.result === "loss") {
         totalLosses += 1;
         // For losses, we don't add to income (it's already negative)
       }
@@ -46,7 +46,9 @@ const calculateMonthlyIncome = async (userId, month, year) => {
     // Calculate monthly income (5% of total bet amount)
     conver99PercentTo100Percent = monthlyBet / 0.99;
 
-    const { level, income } = getLevelIncomeOriginal(conver99PercentTo100Percent);
+    const { level, income } = getLevelIncomeOriginal(
+      conver99PercentTo100Percent
+    );
 
     return {
       totalBetAmount: conver99PercentTo100Percent,
@@ -55,10 +57,10 @@ const calculateMonthlyIncome = async (userId, month, year) => {
       totalWins,
       totalLosses,
       monthlyBet,
-      transactionCount: transactions.length
+      transactionCount: transactions.length,
     };
   } catch (error) {
-    console.error('Error calculating monthly income:', error);
+    console.error("Error calculating monthly income:", error);
     throw error;
   }
 };
@@ -71,7 +73,7 @@ exports.processMonthlyIncome = async (req, res) => {
     if (!month || !year) {
       return res.status(400).json({
         success: false,
-        message: 'Month and year are required'
+        message: "Month and year are required",
       });
     }
 
@@ -79,19 +81,19 @@ exports.processMonthlyIncome = async (req, res) => {
     if (month < 1 || month > 12) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid month (1-12)'
+        message: "Invalid month (1-12)",
       });
     }
 
     if (year < 2020 || year > 2030) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid year'
+        message: "Invalid year",
       });
     }
 
     // Get all users
-    const users = await User.find({ role: 'user' });
+    const users = await User.find({ role: "user" });
     let processedCount = 0;
     let totalIncomeDistributed = 0;
 
@@ -101,16 +103,22 @@ exports.processMonthlyIncome = async (req, res) => {
         const existingMonthlyIncome = await MonthlyIncome.findOne({
           userId: user._id,
           month,
-          year
+          year,
         });
 
         if (existingMonthlyIncome) {
-          console.log(`Monthly income already calculated for user ${user._id} for ${month}/${year}`);
+          console.log(
+            `Monthly income already calculated for user ${user._id} for ${month}/${year}`
+          );
           continue;
         }
 
         // Calculate monthly income
-        const incomeData = await calculateMonthlyIncome(user._id.toString(), month, year);
+        const incomeData = await calculateMonthlyIncome(
+          user._id.toString(),
+          month,
+          year
+        );
 
         // Only create record if user had betting activity
         if (incomeData.totalBetAmount > 0 && incomeData.monthlyIncome > 0) {
@@ -122,7 +130,7 @@ exports.processMonthlyIncome = async (req, res) => {
             totalBetAmount: incomeData.totalBetAmount,
             totalWins: incomeData.totalWins,
             totalLosses: incomeData.totalLosses,
-            monthlyIncome: incomeData.monthlyIncome
+            monthlyIncome: incomeData.monthlyIncome,
           });
 
           await monthlyIncome.save();
@@ -137,10 +145,15 @@ exports.processMonthlyIncome = async (req, res) => {
           processedCount++;
           totalIncomeDistributed += incomeData.monthlyIncome;
 
-          console.log(`Processed monthly income for user ${user._id}: ${incomeData.monthlyIncome} PVC`);
+          console.log(
+            `Processed monthly income for user ${user._id}: ${incomeData.monthlyIncome} PVC`
+          );
         }
       } catch (error) {
-        console.error(`Error processing monthly income for user ${user._id}:`, error);
+        console.error(
+          `Error processing monthly income for user ${user._id}:`,
+          error
+        );
       }
     }
 
@@ -151,16 +164,15 @@ exports.processMonthlyIncome = async (req, res) => {
         processedCount,
         totalIncomeDistributed,
         month,
-        year
-      }
+        year,
+      },
     });
-
   } catch (error) {
-    console.error('Error processing monthly income:', error);
+    console.error("Error processing monthly income:", error);
     res.status(500).json({
       success: false,
-      message: 'Error processing monthly income',
-      error: error.message
+      message: "Error processing monthly income",
+      error: error.message,
     });
   }
 };
@@ -180,7 +192,11 @@ exports.getUserMonthlyIncome = async (req, res) => {
     const currentMonth = now.getMonth() + 1;
     const currentYear = now.getFullYear();
 
-    const incomeData = await calculateMonthlyIncome(userId, currentMonth, currentYear);
+    const incomeData = await calculateMonthlyIncome(
+      userId,
+      currentMonth,
+      currentYear
+    );
     const currentMonthData = {
       month: currentMonth,
       year: currentYear,
@@ -189,7 +205,7 @@ exports.getUserMonthlyIncome = async (req, res) => {
       totalLosses: incomeData.totalLosses,
       monthlyIncome: incomeData.monthlyIncome,
       isPaid: false,
-      isCurrentMonth: true
+      isCurrentMonth: true,
     };
 
     // Calculate total lifetime income
@@ -199,21 +215,20 @@ exports.getUserMonthlyIncome = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'Monthly income data retrieved successfully',
+      message: "Monthly income data retrieved successfully",
       data: {
         monthlyIncomes,
         currentMonthData,
         totalLifetimeIncome,
-        totalRecords: monthlyIncomes.length
-      }
+        totalRecords: monthlyIncomes.length,
+      },
     });
-
   } catch (error) {
-    console.error('Error getting user monthly income:', error);
+    console.error("Error getting user monthly income:", error);
     res.status(500).json({
       success: false,
-      message: 'Error retrieving monthly income data',
-      error: error.message
+      message: "Error retrieving monthly income data",
+      error: error.message,
     });
   }
 };
@@ -230,31 +245,33 @@ exports.getMonthlyIncomeStats = async (req, res) => {
     }
 
     const monthlyIncomes = await MonthlyIncome.find(query)
-      .populate('userId', 'fullName email')
+      .populate("userId", "name email")
       .sort({ year: -1, month: -1 });
 
-    const totalIncome = monthlyIncomes.reduce((sum, income) => sum + income.monthlyIncome, 0);
+    const totalIncome = monthlyIncomes.reduce(
+      (sum, income) => sum + income.monthlyIncome,
+      0
+    );
     const totalPaidIncome = monthlyIncomes
-      .filter(income => income.isPaid)
+      .filter((income) => income.isPaid)
       .reduce((sum, income) => sum + income.monthlyIncome, 0);
 
     res.status(200).json({
       success: true,
-      message: 'Monthly income statistics retrieved successfully',
+      message: "Monthly income statistics retrieved successfully",
       data: {
         monthlyIncomes,
         totalIncome,
         totalPaidIncome,
-        totalRecords: monthlyIncomes.length
-      }
+        totalRecords: monthlyIncomes.length,
+      },
     });
-
   } catch (error) {
-    console.error('Error getting monthly income stats:', error);
+    console.error("Error getting monthly income stats:", error);
     res.status(500).json({
       success: false,
-      message: 'Error retrieving monthly income statistics',
-      error: error.message
+      message: "Error retrieving monthly income statistics",
+      error: error.message,
     });
   }
 };
@@ -267,7 +284,7 @@ exports.markMonthlyIncomeAsPaid = async (req, res) => {
     if (!monthlyIncomeId) {
       return res.status(400).json({
         success: false,
-        message: 'Monthly income ID is required'
+        message: "Monthly income ID is required",
       });
     }
 
@@ -275,14 +292,14 @@ exports.markMonthlyIncomeAsPaid = async (req, res) => {
     if (!monthlyIncome) {
       return res.status(404).json({
         success: false,
-        message: 'Monthly income record not found'
+        message: "Monthly income record not found",
       });
     }
 
     if (monthlyIncome.isPaid) {
       return res.status(400).json({
         success: false,
-        message: 'Monthly income is already marked as paid'
+        message: "Monthly income is already marked as paid",
       });
     }
 
@@ -292,18 +309,17 @@ exports.markMonthlyIncomeAsPaid = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'Monthly income marked as paid successfully',
+      message: "Monthly income marked as paid successfully",
       data: {
-        monthlyIncome: monthlyIncome.toObject()
-      }
+        monthlyIncome: monthlyIncome.toObject(),
+      },
     });
-
   } catch (error) {
-    console.error('Error marking monthly income as paid:', error);
+    console.error("Error marking monthly income as paid:", error);
     res.status(500).json({
       success: false,
-      message: 'Error marking monthly income as paid',
-      error: error.message
+      message: "Error marking monthly income as paid",
+      error: error.message,
     });
   }
-}; 
+};

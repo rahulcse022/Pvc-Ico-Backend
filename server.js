@@ -90,7 +90,7 @@ const startServer = async () => {
     const adminExists = await User.findOne({ role: "admin" });
     if (!adminExists) {
       const admin = new User({
-        fullName: "Admin",
+        name: "Admin",
         email: "admin@pvctrading.io",
         phone: "9999999999",
         password: "Admin@123", // Will be hashed by pre-save middleware

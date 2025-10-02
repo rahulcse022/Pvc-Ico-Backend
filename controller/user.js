@@ -14,6 +14,25 @@ const {
   sendWelcomeEmail,
 } = require("../utils/emailService");
 
+const generateRandomUniqueAccountNumber = async () => {
+  // generate 9 digit random unique account number
+  const min = 100000000; // Minimum 9-digit number
+  const max = 999999999; // Maximum 9-digit number
+
+  // Generate a random 9-digit number
+  const randomNumber = Math.floor(Math.random() * (max - min + 1)) + min;
+
+  // Check if the account number already exists in the database
+  const existingUser = await User.findOne({ accountNumber: randomNumber });
+
+  // If the account number already exists, recursively generate a new one
+  if (existingUser) {
+    return generateRandomUniqueAccountNumber();
+  }
+
+  return randomNumber;
+};
+
 // Validate JWT token
 exports.validateToken = async (req, res) => {
   try {
@@ -47,10 +66,10 @@ exports.validateToken = async (req, res) => {
 
 exports.register = async (req, res) => {
   try {
-    const { fullName, email, phone, password, referralCode } = req.body;
+    const { name, email, phone, password, referralCode } = req.body;
 
     // Input validation
-    if (!fullName || !email || !phone || !password) {
+    if (!name || !email || !phone || !password) {
       return res.status(400).json({
         success: false,
         message:
@@ -85,7 +104,7 @@ exports.register = async (req, res) => {
     }
 
     // Validate full name
-    if (fullName.trim().length < 2) {
+    if (name.trim().length < 2) {
       return res.status(400).json({
         success: false,
         message: "Full name must be at least 2 characters long",
@@ -152,9 +171,10 @@ exports.register = async (req, res) => {
 
     // Create new user
     const user = new User({
-      fullName: fullName.trim(),
+      name: name.trim(),
       email: email.toLowerCase().trim(),
       phone: phone.trim(),
+      accountNumber: await generateRandomUniqueAccountNumber(),
       password,
       role: "user",
       referralCode: userReferralCode,
@@ -189,7 +209,7 @@ exports.register = async (req, res) => {
     // Send welcome email (skip for test users)
     if (!user.email.includes("@loadtest.com")) {
       try {
-        await sendWelcomeEmail(user.email, user.fullName, password);
+        await sendWelcomeEmail(user.email, user.name, password);
       } catch (emailError) {
         console.error("Email sending failed:", emailError);
       }
@@ -245,32 +265,22 @@ exports.register = async (req, res) => {
 
 exports.login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { accountNumber, password } = req.body;
 
     // Input validation
-    if (!email || !password) {
+    if (!accountNumber || !password) {
       return res.status(400).json({
         success: false,
-        message: "Email and password are required",
-      });
-    }
-
-    // Validate email format
-    const emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
-    if (!emailRegex.test(email)) {
-      return res.status(400).json({
-        success: false,
-        message: "Please enter a valid email address",
+        message: "Account number and password are required",
       });
     }
 
     // Check if user exists
-    const user = await User.findOne({ email: email.toLowerCase(), password });
+    const user = await User.findOne({ accountNumber, password });
     if (!user) {
       return res.status(401).json({
         success: false,
-        message:
-          "Invalid email or password. Please check your credentials and try again.",
+        message: "Invalid account number or password",
       });
     }
 
@@ -383,18 +393,18 @@ exports.adminLogin = async (req, res) => {
 // Update user profile
 exports.updateProfile = async (req, res) => {
   try {
-    const { fullName, phone } = req.body;
+    const { name, phone } = req.body;
     const userId = req.user.userId; // From JWT token
 
     // Validation
-    if (!fullName || !phone) {
+    if (!name || !phone) {
       return res.status(400).json({
         success: false,
         message: "Full name and phone are required",
       });
     }
 
-    if (fullName.trim().length < 2) {
+    if (name.trim().length < 2) {
       return res.status(400).json({
         success: false,
         message: "Full name must be at least 2 characters long",
@@ -427,7 +437,7 @@ exports.updateProfile = async (req, res) => {
     const updatedUser = await User.findByIdAndUpdate(
       userId,
       {
-        fullName: fullName.trim(),
+        name: name.trim(),
         phone: phone.trim(),
       },
       {
@@ -574,7 +584,7 @@ exports.forgotPassword = async (req, res) => {
 
     // Send password reset email
     try {
-      await sendPasswordResetEmail(user.email, resetToken, user.fullName);
+      await sendPasswordResetEmail(user.email, resetToken, user.name);
 
       res.status(200).json({
         success: true,
@@ -667,7 +677,7 @@ exports.resetPassword = async (req, res) => {
 
     // Send confirmation email
     try {
-      await sendPasswordResetConfirmationEmail(user.email, user.fullName);
+      await sendPasswordResetConfirmationEmail(user.email, user.name);
     } catch (emailError) {
       console.error("Failed to send confirmation email:", emailError);
       // Don't fail the request if confirmation email fails

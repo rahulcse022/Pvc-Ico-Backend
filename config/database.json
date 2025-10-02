@@ -2,7 +2,7 @@
 	"development": {
 		"mongodb": {
 			"uri": "mongodb://localhost:27017",
-			"database": "RRRRRRR",
+			"database": "pearlvine",
 			"options": {
 				"useNewUrlParser": true,
 				"useUnifiedTopology": true,

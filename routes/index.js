@@ -1,4 +1,7 @@
 const userController = require("../controller/user");
+const stakingController = require("../controller/stakingController");
+const privateSaleController = require("../controller/privateSaleController");
+const tokenPriceController = require("../controller/tokenPriceController");
 // const transactionsController = require("../controller/transactions");
 // const walletController = require("../controller/wallet");
 // const withdrawController = require("../controller/withdraw");
@@ -43,6 +46,52 @@ router.put("/profile/update", authenticateToken, userController.updateProfile);
 router.post("/forgot-password", userController.forgotPassword);
 router.post("/reset-password", userController.resetPassword);
 router.get("/validate-reset-token/:token", userController.validateResetToken);
+
+// Staking routes
+
+router.post("/staking/create", authenticateToken, stakingController.create);
+router.get("/staking/list", authenticateToken, stakingController.getByUserId);
+router.get("/staking/:stakingId", authenticateToken, stakingController.getById);
+
+// Private sale routes
+router.post(
+  "/private-sale/create",
+  authenticateToken,
+  privateSaleController.create
+);
+router.get(
+  "/private-sale/list",
+  authenticateToken,
+  privateSaleController.getByUserId
+);
+router.get(
+  "/private-sale/:privateSaleId",
+  authenticateToken,
+  privateSaleController.getById
+);
+
+// Token Price routes for graph data
+router.post(
+  "/token-price/create",
+  authenticateToken,
+  tokenPriceController.create
+);
+router.get("/token-price/list", authenticateToken, tokenPriceController.getAll);
+router.get(
+  "/token-price/:tokenPriceId",
+  authenticateToken,
+  tokenPriceController.getById
+);
+router.put(
+  "/token-price/:tokenPriceId",
+  authenticateToken,
+  tokenPriceController.update
+);
+router.delete(
+  "/token-price/:tokenPriceId",
+  authenticateToken,
+  tokenPriceController.delete
+);
 
 // // Monthly income routes
 // router.get(

@@ -21,7 +21,9 @@ const calculateMonthlyIncome = async (userId) => {
 
     conver99PercentTo100Percent = monthlyBet / 0.99;
 
-    const { level, income } = getLevelIncomeOriginal(conver99PercentTo100Percent);
+    const { level, income } = getLevelIncomeOriginal(
+      conver99PercentTo100Percent
+    );
 
     return {
       totalBetAmount: conver99PercentTo100Percent,
@@ -113,7 +115,7 @@ exports.getMonthlyIncomeStats = async (req, res) => {
   try {
     const monthlyIncomes = await MonthlyIncome.find({}).populate(
       "userId",
-      "fullName email"
+      "name email"
     );
 
     const totalIncome = monthlyIncomes.reduce(
