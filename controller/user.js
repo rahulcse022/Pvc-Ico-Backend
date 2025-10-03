@@ -2,7 +2,7 @@ const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const { JWT_TOKEN } = require("../env");
 
-// Models
+const StakingModel = require("../models/Staking");
 const User = require("../models/User");
 const Wallet = require("../models/Wallet");
 const PasswordResetToken = require("../models/PasswordResetToken");
@@ -13,6 +13,7 @@ const {
   sendPasswordResetConfirmationEmail,
   sendWelcomeEmail,
 } = require("../utils/emailService");
+const PrivateSale = require("../models/PrivateSale");
 
 const generateRandomUniqueAccountNumber = async () => {
   // generate 9 digit random unique account number
@@ -748,13 +749,49 @@ exports.userDashboard = async (req, res) => {
   try {
     const userId = req.user.userId; // From JWT token
 
-    // Get user staking information
+    // Get user information
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Get wallet information
+    const wallet = await Wallet.findOne({ userId });
+    const balance = wallet ? wallet.balance : 0;
+
+    // Get staking information
+
     const stakingList = await StakingModel.find({ userId });
+    // Note: We should not return 404 if stakingList is empty, as the user might not have any stakes yet
+    const totalStaked = stakingList.reduce(
+      (total, stake) => total + stake.pvc,
+      0
+    );
+
+    const icoList = await PrivateSale.find({ userId });
+    const totalInvestInICO = icoList.reduce(
+      (total, invest) => total + invest.pvc,
+      0
+    );
+
+    // Calculate total earnings (all income sources combined)
+    const totalEarnings = user?.totalReferrals + user?.totalReferralEarnings;
+
+    console.log("user is : ", user);
 
     res.status(200).json({
       success: true,
       data: {
-        stakingList,
+        balance,
+        totalEarnings,
+        totalReferrals: user?.totalReferrals,
+        totalReferralEarnings: user?.totalReferralEarnings,
+        totalStaked,
+        totalInvestInICO: totalInvestInICO,
+        thisMonthRefIncome: 0,
       },
     });
   } catch (error) {
@@ -762,6 +799,7 @@ exports.userDashboard = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "An error occurred while fetching user dashboard information",
+      error: error.message,
     });
   }
 };

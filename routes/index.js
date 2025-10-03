@@ -266,4 +266,5 @@ router.delete(
 //   dashboardController.getDashboardStats
 // );
 
+router.get("/dashboard", authenticateToken, userController.userDashboard);
 module.exports = router;
