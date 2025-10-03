@@ -743,3 +743,25 @@ exports.validateResetToken = async (req, res) => {
     });
   }
 };
+
+exports.userDashboard = async (req, res) => {
+  try {
+    const userId = req.user.userId; // From JWT token
+
+    // Get user staking information
+    const stakingList = await StakingModel.find({ userId });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        stakingList,
+      },
+    });
+  } catch (error) {
+    console.error("User dashboard error:", error);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while fetching user dashboard information",
+    });
+  }
+};

@@ -64,3 +64,50 @@ exports.getById = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+exports.claim = async (req, res) => {
+  try {
+    const { stakingId } = req.body;
+    const { userId } = req.user;
+
+    console.log("userId of the user : ", userId);
+
+    const stake = await StakingModel.findById(stakingId);
+
+    if (!stake) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Staking not found" });
+    }
+
+    if (stake.isClaimed) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Staking already claimed" });
+    }
+
+    if (stake.userId.toString() !== userId) {
+      return res
+        .status(403)
+        .json({ success: false, message: "Not authorized to claim" });
+    }
+
+    if (stake.maturityTime > new Date()) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Staking not matured yet" });
+    }
+
+    // Update the original staking record to mark as claimed
+    stake.isClaimed = true;
+    await stake.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Staking claimed successfully",
+      data: stake,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
