@@ -1,7 +1,7 @@
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const { JWT_TOKEN } = require("../env");
-
+const mongoose = require("mongoose");
 const StakingModel = require("../models/Staking");
 const User = require("../models/User");
 const Wallet = require("../models/Wallet");
@@ -14,6 +14,7 @@ const {
   sendWelcomeEmail,
 } = require("../utils/emailService");
 const PrivateSale = require("../models/PrivateSale");
+const validateInput = require("../utils/validateInput");
 
 const generateRandomUniqueAccountNumber = async () => {
   // generate 9 digit random unique account number
@@ -495,45 +496,150 @@ exports.updateProfile = async (req, res) => {
   }
 };
 
-exports.list = async (req, res) => {
+// exports.list = async (req, res) => {
+//   try {
+//     const tokenInfo = req.user;
+//     console.log("Token info:", tokenInfo);
+
+//     // Fetch all users with role 'user'
+//     const users = await User.find({ role: "user" });
+
+//     // Fetch wallets for all users and merge info
+//     const userWithWallets = await Promise.all(
+//       users.map(async (user) => {
+//         const wallet = await Wallet.findOne({ userId: user._id.toString() });
+
+//         return {
+//           ...user.toObject(),
+//           wallet: wallet
+//             ? {
+//                 balance: wallet.balance,
+//               }
+//             : {
+//                 balance: 0,
+//               },
+//         };
+//       })
+//     );
+
+//     res.status(200).json({
+//       success: true,
+//       message: "Users list fetched successfully",
+//       data: userWithWallets,
+//     });
+//   } catch (error) {
+//     console.error("Users list error:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: "Error in users list",
+//       error: error.message,
+//     });
+//   }
+// };
+
+exports.adminList = async (req, res) => {
   try {
-    const tokenInfo = req.user;
-    console.log("Token info:", tokenInfo);
+    let { page = 1, limit = 10, search = "" } = req.query;
 
-    // Fetch all users with role 'user'
-    const users = await User.find({ role: "user" });
+    page = parseInt(page);
+    limit = parseInt(limit);
 
-    // Fetch wallets for all users and merge info
-    const userWithWallets = await Promise.all(
-      users.map(async (user) => {
-        const wallet = await Wallet.findOne({ userId: user._id.toString() });
+    if (isNaN(page) || page < 1) page = 1;
+    if (isNaN(limit) || limit < 1) limit = 10;
 
-        return {
-          ...user.toObject(),
-          wallet: wallet
-            ? {
-                balance: wallet.balance,
-                level: wallet.level,
-              }
-            : {
-                balance: 0,
-                level: "V0",
-              },
-        };
-      })
-    );
+    const skip = (page - 1) * limit;
+
+    // ✅ Build search filter
+    const searchFilter = search
+      ? {
+          $or: [
+            { accountNumber: { $regex: Number(search), $options: "i" } },
+            { email: { $regex: search, $options: "i" } },
+          ],
+        }
+      : {};
+
+    // ✅ Fetch paginated data and populate user details
+    const [users, total] = await Promise.all([
+      User.find(searchFilter).skip(skip).limit(limit).sort({ createdAt: -1 }),
+      User.countDocuments(searchFilter),
+    ]);
+
+    const totalItems = total.length > 0 ? total[0].total : 0;
+    const totalPages = Math.ceil(totalItems / limit);
+
+    // ✅ Send response
+    res.status(200).json({
+      success: true,
+      data: users,
+      pagination: {
+        totalItems,
+        totalPages,
+        currentPage: page,
+        pageSize: limit,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+      },
+    });
+  } catch (error) {
+    console.error("Admin List Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch admin list.",
+      error: error.message,
+    });
+  }
+};
+
+exports.blockUnblockUser = async (req, res) => {
+  try {
+    const { userId, isSuspended } = req.body;
+    console.log("req user : ", req.user);
+
+    // ✅ 1. Check admin authorization
+    if (!req.user || req.user.role !== "admin") {
+      return res.status(403).json({
+        success: false,
+        message: "Admin access required",
+      });
+    }
+
+    // ✅ 2. Universal validation
+    const validationError = validateInput({
+      userId: { value: userId, required: true, isMongoId: true },
+      isSuspended: { value: isSuspended, required: true, type: "boolean" },
+    });
+
+    if (validationError) {
+      return res.status(400).json(validationError);
+    }
+
+    // ✅ 4. Update user status
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { isSuspended },
+      { new: true, runValidators: true }
+    ).select("-password");
+
+    if (!updatedUser) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
 
     res.status(200).json({
       success: true,
-      message: "Users list fetched successfully",
-      data: userWithWallets,
+      message: `User ${isSuspended ? "blocked" : "unblocked"} successfully`,
+      data: { user: updatedUser.toObject() },
     });
   } catch (error) {
-    console.error("Users list error:", error);
+    console.error("Profile update error:", error);
+
     res.status(500).json({
       success: false,
-      message: "Error in users list",
-      error: error.message,
+      message: "Unable to update user block status.",
+      error: "Internal server error",
     });
   }
 };

@@ -38,7 +38,13 @@ const authenticateToken = (req, res, next) => {
 router.post("/login", userController.login);
 router.post("/admin/login", userController.adminLogin);
 router.post("/register", userController.register);
-router.get("/users/list", authenticateToken, userController.list);
+// router.get("/users/list", authenticateToken, userController.list);
+router.patch(
+  "/users/block-unblock",
+  authenticateToken,
+  userController.blockUnblockUser
+);
+router.get("/users/admin/list", authenticateToken, userController.adminList);
 router.get("/auth/validate", authenticateToken, userController.validateToken);
 router.put("/profile/update", authenticateToken, userController.updateProfile);
 router.get("/dashboard", authenticateToken, userController.userDashboard);
@@ -48,13 +54,18 @@ router.post("/forgot-password", userController.forgotPassword);
 router.post("/reset-password", userController.resetPassword);
 router.get("/validate-reset-token/:token", userController.validateResetToken);
 
-// Staking routes
+// ------------------------------- Staking routes  -------------------------------
 
 router.post("/staking/create", authenticateToken, stakingController.create);
 router.get("/staking/list", authenticateToken, stakingController.getByUserId);
 router.get("/staking/:stakingId", authenticateToken, stakingController.getById);
+router.get(
+  "/staking/admin/list",
+  authenticateToken,
+  stakingController.adminList
+);
 
-// Private sale routes
+//  ------------------------------- Private sale routes  -------------------------------
 router.post(
   "/private-sale/create",
   authenticateToken,
@@ -70,8 +81,13 @@ router.get(
   authenticateToken,
   privateSaleController.getById
 );
+router.get(
+  "/private-sale/admin/list",
+  authenticateToken,
+  privateSaleController.adminList
+);
 
-// Token Price routes for graph data
+//  ------------------------------- Token Price routes for graph data  -------------------------------
 router.post(
   "/token-price/create",
   authenticateToken,

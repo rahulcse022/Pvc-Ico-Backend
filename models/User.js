@@ -8,7 +8,7 @@ const userSchema = new mongoose.Schema(
       trim: true,
     },
     accountNumber: {
-      type: Number,
+      type: String,
       require: [true, "Account number is required"],
       unique: true,
     },

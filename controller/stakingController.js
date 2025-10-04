@@ -115,3 +115,97 @@ exports.claim = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+exports.adminList = async (req, res) => {
+  try {
+    let { page = 1, limit = 10, search = "" } = req.query;
+
+    page = parseInt(page);
+    limit = parseInt(limit);
+
+    if (isNaN(page) || page < 1) page = 1;
+    if (isNaN(limit) || limit < 1) limit = 10;
+
+    const skip = (page - 1) * limit;
+
+    // ✅ Build search filter
+    const searchFilter = search
+      ? {
+          $or: [
+            { "user.accountNumber": { $regex: search, $options: "i" } },
+            { "user.email": { $regex: search, $options: "i" } },
+          ],
+        }
+      : {};
+
+    // ✅ Populate user details & apply pagination + search
+    const [stakingList, total] = await Promise.all([
+      StakingModel.aggregate([
+        {
+          $lookup: {
+            from: "users", // collection name in MongoDB
+            localField: "userId",
+            foreignField: "_id",
+            as: "user",
+          },
+        },
+        { $unwind: "$user" },
+        { $match: searchFilter },
+        { $sort: { createdAt: -1 } },
+        { $skip: skip },
+        { $limit: limit },
+        {
+          $project: {
+            _id: 1,
+            pvc: 1,
+            stakedAt: 1,
+            maturedAt: 1,
+            rewardPercent: 1,
+            isClaimed: 1,
+            txHash: 1,
+            createdAt: 1,
+            "user.accountNumber": 1,
+            "user.email": 1,
+          },
+        },
+      ]),
+      StakingModel.aggregate([
+        {
+          $lookup: {
+            from: "users",
+            localField: "userId",
+            foreignField: "_id",
+            as: "user",
+          },
+        },
+        { $unwind: "$user" },
+        { $match: searchFilter },
+        { $count: "total" },
+      ]),
+    ]);
+
+    const totalItems = total.length > 0 ? total[0].total : 0;
+    const totalPages = Math.ceil(totalItems / limit);
+
+    // ✅ Send response
+    res.status(200).json({
+      success: true,
+      data: stakingList,
+      pagination: {
+        totalItems,
+        totalPages,
+        currentPage: page,
+        pageSize: limit,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+      },
+    });
+  } catch (error) {
+    console.error("Admin List Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch admin list.",
+      error: error.message,
+    });
+  }
+};
