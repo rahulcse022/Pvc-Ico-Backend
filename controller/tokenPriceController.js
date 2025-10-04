@@ -10,6 +10,14 @@ exports.create = async (req, res) => {
     if (req.user.role !== "admin") {
       return res.status(403).json({
         success: false,
+        message: "Only admin can update token price data",
+      });
+    }
+
+    // Validate admin role
+    if (req.user.role !== "admin") {
+      return res.status(403).json({
+        success: false,
         message: "Only admin can add token price data",
       });
     }

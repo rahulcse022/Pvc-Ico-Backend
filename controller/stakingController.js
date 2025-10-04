@@ -2,17 +2,21 @@ const StakingModel = require("../models/Staking");
 
 exports.create = async (req, res) => {
   try {
-    const { pvc } = req.body;
+    const { pvc, txHash } = req.body;
     const { userId } = req.user;
 
     console.log("userId of the user : ", userId);
 
+    const maturedAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes later
+    // this.maturedAt = new Date(stakedAt.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days later
+
     const newStake = new StakingModel({
       userId,
       pvc,
-      stakeTime: new Date(),
-      maturityTime: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      stakedAt: new Date(),
+      maturedAt: maturedAt,
       isClaimed: false,
+      txHash,
     });
 
     await newStake.save();

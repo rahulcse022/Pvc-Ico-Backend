@@ -41,6 +41,7 @@ router.post("/register", userController.register);
 router.get("/users/list", authenticateToken, userController.list);
 router.get("/auth/validate", authenticateToken, userController.validateToken);
 router.put("/profile/update", authenticateToken, userController.updateProfile);
+router.get("/dashboard", authenticateToken, userController.userDashboard);
 
 // Password reset routes
 router.post("/forgot-password", userController.forgotPassword);

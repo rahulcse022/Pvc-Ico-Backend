@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-const { transactionStatus } = require("../utils/helper");
 
 const StakingSchema = new mongoose.Schema(
   {
@@ -9,25 +8,30 @@ const StakingSchema = new mongoose.Schema(
       required: true,
     },
     pvc: { type: Number, required: true },
-    stakeTime: {
+    stakedAt: {
       type: Date,
       required: true,
     },
-    maturityTime: {
+    maturedAt: {
       type: Date,
       required: true,
+    },
+    rewardPercent: {
+      type: Number,
+      default: 6,
     },
     isClaimed: {
       type: Boolean,
-      requird: true,
       default: false,
     },
-    status: { type: String, default: transactionStatus.pending },
-    txHash: { type: String, default: "" },
+    txHash: { type: String, required: true },
   },
   {
     timestamps: true,
   }
 );
+
+// Add index for optimized queries
+StakingSchema.index({ userId: 1, isClaimed: 1 });
 
 module.exports = mongoose.model("Staking", StakingSchema);
