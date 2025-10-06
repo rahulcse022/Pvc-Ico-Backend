@@ -54,6 +54,12 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use("/api/v1", appRoutes);
 
+app.get("/", (req, res) => {
+  res.status(200).json({
+    message: "Welcome to Pearlvine Backend API",
+  });
+});
+
 // Test route to verify server is working
 app.get("/check", (req, res) => {
   res.status(200).json({
