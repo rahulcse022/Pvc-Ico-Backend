@@ -10,21 +10,52 @@ exports.create = async (req, res) => {
     if (req.user.role !== "admin") {
       return res.status(403).json({
         success: false,
-        message: "Only admin can update token price data",
+        message: "Only admin can manage token price data",
       });
     }
 
-    // Validate admin role
-    if (req.user.role !== "admin") {
-      return res.status(403).json({
+    // Validate inputs
+    if (!price || typeof price !== "number" || price <= 0) {
+      return res.status(400).json({
         success: false,
-        message: "Only admin can add token price data",
+        message: "Price must be a positive number",
+      });
+    }
+    const tokenDate = date ? new Date(date) : new Date();
+    if (date && isNaN(tokenDate.getTime())) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid date format",
       });
     }
 
+    // Check if a token price entry exists for the given date
+    const existingTokenPrice = await TokenPriceModel.findOne({
+      date: {
+        $gte: new Date(tokenDate.setHours(0, 0, 0, 0)),
+        $lt: new Date(tokenDate.setHours(23, 59, 59, 999)),
+      },
+    });
+
+    if (existingTokenPrice) {
+      // Update existing entry
+      const updatedTokenPrice = await TokenPriceModel.findOneAndUpdate(
+        { _id: existingTokenPrice._id },
+        { price, updatedBy: userId, updatedAt: new Date() },
+        { new: true }
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: "Token price data updated successfully",
+        data: updatedTokenPrice,
+      });
+    }
+
+    // Create new entry if none exists
     const newTokenPrice = new TokenPriceModel({
       price,
-      date: date || new Date(),
+      date: tokenDate,
       createdBy: userId,
     });
 
@@ -36,7 +67,11 @@ exports.create = async (req, res) => {
       data: newTokenPrice,
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error("Error in create token price:", error);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while processing the token price",
+    });
   }
 };
 
