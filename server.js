@@ -7,26 +7,17 @@ const rateLimit = require("express-rate-limit");
 
 const app = express();
 
-const generalLimiter = rateLimit({
-  windowMs: 1 * 60 * 1000,
-  max: 1000,
-  message: {
-    success: false,
-    message: "Too many requests from this IP, please try again later.",
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-app.use(generalLimiter);
-
 // CORS configuration
 const corsOptions = {
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
 
-    const allowedOrigins = ["http://localhost:5173", "http://127.0.0.1:5173"];
+    const allowedOrigins = [
+      "*",
+      "http://localhost:3013",
+      "http://127.0.0.1:3013",
+    ];
 
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
@@ -41,6 +32,9 @@ const corsOptions = {
     "Authorization",
     "X-Requested-With",
     "Accept",
+    "Cache-Control",
+    "Origin",
+    "X-HTTP-Method-Override",
   ],
   optionsSuccessStatus: 200, // Some legacy browsers (IE11, various SmartTVs) choke on 204
 };
