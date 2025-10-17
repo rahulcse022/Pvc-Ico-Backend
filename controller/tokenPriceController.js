@@ -1,4 +1,5 @@
 const TokenPriceModel = require("../models/TokenPrice");
+const validateInput = require("../utils/validateInput");
 
 // Create a new token price entry
 exports.create = async (req, res) => {
@@ -14,8 +15,17 @@ exports.create = async (req, res) => {
       });
     }
 
-    // Validate inputs
-    if (!price || typeof price !== "number" || price <= 0) {
+    // Input validation using validateInput utility
+    const validationError = validateInput({
+      price: { value: price, required: true, type: "number" },
+    });
+
+    if (validationError) {
+      return res.status(400).json(validationError);
+    }
+
+    // Additional validation for positive price
+    if (price <= 0) {
       return res.status(400).json({
         success: false,
         message: "Price must be a positive number",
@@ -95,6 +105,16 @@ exports.getAll = async (req, res) => {
 exports.getById = async (req, res) => {
   try {
     const tokenPriceId = req.params.tokenPriceId;
+
+    // Input validation using validateInput utility
+    const validationError = validateInput({
+      tokenPriceId: { value: tokenPriceId, required: true, type: "string", isMongoId: true },
+    });
+
+    if (validationError) {
+      return res.status(400).json(validationError);
+    }
+
     const tokenPrice = await TokenPriceModel.findById(tokenPriceId);
 
     if (!tokenPrice) {
@@ -125,6 +145,15 @@ exports.update = async (req, res) => {
         success: false,
         message: "Only admin can update token price data",
       });
+    }
+
+    // Input validation using validateInput utility
+    const validationError = validateInput({
+      tokenPriceId: { value: tokenPriceId, required: true, type: "string", isMongoId: true },
+    });
+
+    if (validationError) {
+      return res.status(400).json(validationError);
     }
 
     const tokenPrice = await TokenPriceModel.findById(tokenPriceId);
@@ -162,6 +191,15 @@ exports.delete = async (req, res) => {
         success: false,
         message: "Only admin can delete token price data",
       });
+    }
+
+    // Input validation using validateInput utility
+    const validationError = validateInput({
+      tokenPriceId: { value: tokenPriceId, required: true, type: "string", isMongoId: true },
+    });
+
+    if (validationError) {
+      return res.status(400).json(validationError);
     }
 
     const tokenPrice = await TokenPriceModel.findByIdAndDelete(tokenPriceId);

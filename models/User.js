@@ -9,7 +9,7 @@ const userSchema = new mongoose.Schema(
     },
     accountNumber: {
       type: String,
-      require: [true, "Account number is required"],
+      required: [true, "Account number is required"],
       unique: true,
     },
     email: {
@@ -34,13 +34,13 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: [true, "Password is required"],
       minlength: [6, "Password must be at least 6 characters long"],
+      select: false, // Optional: hides password by default when querying
     },
     role: {
       type: String,
       enum: ["user", "admin"],
       default: "user",
     },
-    // Referral fields
     referralCode: {
       type: String,
       unique: true,
@@ -67,6 +67,10 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    isActiveReferral: {
+      type: Boolean,
+      default: false,
+    },
     createdAt: {
       type: Date,
       default: Date.now,
@@ -74,6 +78,18 @@ const userSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
+    toJSON: {
+      transform(doc, ret) {
+        delete ret.password; // remove password field
+        return ret;
+      },
+    },
+    toObject: {
+      transform(doc, ret) {
+        delete ret.password; // remove password field for .toObject() as well
+        return ret;
+      },
+    },
   }
 );
 

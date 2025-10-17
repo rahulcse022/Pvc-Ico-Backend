@@ -1,11 +1,60 @@
 const StakingModel = require("../models/Staking");
+const User = require("../models/User");
+const crypto = require("crypto");
+const { processReferralEarnings } = require("./referral");
+const validateInput = require("../utils/validateInput");
+
+// Generate unique referral code
+const generateReferralCode = () => {
+  return crypto.randomBytes(4).toString("hex").toUpperCase();
+};
 
 exports.create = async (req, res) => {
   try {
     const { pvc, txHash } = req.body;
     const { userId } = req.user;
 
+    // Input validation using validateInput utility
+    const validationError = validateInput({
+      pvc: { value: pvc, required: true, type: "number" },
+      txHash: { value: txHash, required: true, type: "string" },
+    });
+
+    if (validationError) {
+      return res.status(400).json(validationError);
+    }
+
     console.log("userId of the user : ", userId);
+
+    // Check if this is user's first stake
+    const existingStakes = await StakingModel.find({ userId });
+    const isFirstStake = existingStakes.length === 0;
+
+    // If first stake, generate referral code and mark as active referral
+    if (isFirstStake) {
+      const user = await User.findById(userId);
+      if (user && !user.referralCode) {
+        // Generate unique referral code
+        let referralCode;
+        let isUnique = false;
+        let attempts = 0;
+
+        while (!isUnique && attempts < 10) {
+          referralCode = generateReferralCode();
+          const existingUser = await User.findOne({ referralCode });
+          if (!existingUser) {
+            isUnique = true;
+          }
+          attempts++;
+        }
+
+        if (isUnique) {
+          user.referralCode = referralCode;
+          user.isActiveReferral = true;
+          await user.save();
+        }
+      }
+    }
 
     const maturedAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes later
     // this.maturedAt = new Date(stakedAt.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days later
@@ -20,6 +69,9 @@ exports.create = async (req, res) => {
     });
 
     await newStake.save();
+
+    // Process referral earnings for the referral chain
+    await processReferralEarnings(userId, pvc, newStake._id);
 
     res.status(201).json({
       success: true,
@@ -51,6 +103,16 @@ exports.getByUserId = async (req, res) => {
 exports.getById = async (req, res) => {
   try {
     const stakingId = req.params.stakingId;
+
+    // Input validation using validateInput utility
+    const validationError = validateInput({
+      stakingId: { value: stakingId, required: true, type: "string", isMongoId: true },
+    });
+
+    if (validationError) {
+      return res.status(400).json(validationError);
+    }
+
     const staking = await StakingModel.findById(stakingId);
 
     if (!staking) {
@@ -73,6 +135,15 @@ exports.claim = async (req, res) => {
   try {
     const { stakingId } = req.body;
     const { userId } = req.user;
+
+    // Input validation using validateInput utility
+    const validationError = validateInput({
+      stakingId: { value: stakingId, required: true, type: "string", isMongoId: true },
+    });
+
+    if (validationError) {
+      return res.status(400).json(validationError);
+    }
 
     console.log("userId of the user : ", userId);
 
@@ -131,11 +202,11 @@ exports.adminList = async (req, res) => {
     // ✅ Build search filter
     const searchFilter = search
       ? {
-          $or: [
-            { "user.accountNumber": { $regex: search, $options: "i" } },
-            { "user.email": { $regex: search, $options: "i" } },
-          ],
-        }
+        $or: [
+          { "user.accountNumber": { $regex: search, $options: "i" } },
+          { "user.email": { $regex: search, $options: "i" } },
+        ],
+      }
       : {};
 
     // ✅ Populate user details & apply pagination + search

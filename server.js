@@ -3,7 +3,7 @@ const cors = require("cors");
 const database = require("./config/database");
 const User = require("./models/User"); // Import User model
 const appRoutes = require("./routes");
-const rateLimit = require("express-rate-limit");
+const { ADMIN_REFERRAL_CODE } = require("./utils/constant");
 
 const app = express();
 
@@ -95,6 +95,9 @@ const startServer = async () => {
         phone: "9999999999",
         password: "Admin@123", // Will be hashed by pre-save middleware
         role: "admin",
+        referralCode: ADMIN_REFERRAL_CODE,
+        isActiveReferral: true,
+        accountNumber: "123456789"
       });
       await admin.save();
       console.log("Default admin user created.");
