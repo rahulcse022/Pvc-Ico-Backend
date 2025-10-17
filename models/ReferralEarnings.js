@@ -13,9 +13,9 @@ const referralEarningsSchema = new mongoose.Schema({
     required: false
   },
 
-  winningUserId: {
+  stakingId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    ref: 'Staking',
     required: true
   },
   // Referral level (1-20)
@@ -44,10 +44,6 @@ const referralEarningsSchema = new mongoose.Schema({
     type: String,
     enum: ['pending', 'credited', 'failed'],
     default: 'pending'
-  },
-  roundNumber: {
-    type: Number,
-    required: true
   }
 }, {
   timestamps: true
@@ -55,7 +51,7 @@ const referralEarningsSchema = new mongoose.Schema({
 
 // Add indexes for better query performance
 referralEarningsSchema.index({ userId: 1, createdAt: -1 });
-referralEarningsSchema.index({ winningUserId: 1 });
+referralEarningsSchema.index({ stakingId: 1 });
 referralEarningsSchema.index({ level: 1 });
 referralEarningsSchema.index({ status: 1 });
 

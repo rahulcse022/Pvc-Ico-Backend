@@ -1,2 +1,3 @@
 export const BANK_WITHDRAWAL_CHARGES = 10;
 export const CRYPTO_WITHDRAWAL_CHARGES = 5;
+export const ADMIN_REFERRAL_CODE = "PEARLVINE";

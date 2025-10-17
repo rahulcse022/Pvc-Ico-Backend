@@ -1,11 +1,24 @@
 const PrivateSaleModel = require("../models/PrivateSale");
 const { transactionStatus } = require("../utils/helper");
+const validateInput = require("../utils/validateInput");
 
 // Create a new private sale
 exports.create = async (req, res) => {
   try {
     const { pvc, usdt, price, txHash } = req.body;
     const userId = req.user.userId;
+
+    // Input validation using validateInput utility
+    const validationError = validateInput({
+      pvc: { value: pvc, required: true, type: "number" },
+      usdt: { value: usdt, required: true, type: "number" },
+      price: { value: price, required: true, type: "number" },
+      txHash: { value: txHash, required: true, type: "string" },
+    });
+
+    if (validationError) {
+      return res.status(400).json(validationError);
+    }
 
     const newPrivateSale = new PrivateSaleModel({
       userId,
@@ -32,6 +45,16 @@ exports.create = async (req, res) => {
 exports.getById = async (req, res) => {
   try {
     const privateSaleId = req.params.privateSaleId;
+
+    // Input validation using validateInput utility
+    const validationError = validateInput({
+      privateSaleId: { value: privateSaleId, required: true, type: "string", isMongoId: true },
+    });
+
+    if (validationError) {
+      return res.status(400).json(validationError);
+    }
+
     const privateSale = await PrivateSaleModel.findById(privateSaleId);
 
     if (!privateSale) {
@@ -80,11 +103,11 @@ exports.adminList = async (req, res) => {
     // ✅ Build search filter
     const searchFilter = search
       ? {
-          $or: [
-            { "user.accountNumber": { $regex: search, $options: "i" } },
-            { "user.email": { $regex: search, $options: "i" } },
-          ],
-        }
+        $or: [
+          { "user.accountNumber": { $regex: search, $options: "i" } },
+          { "user.email": { $regex: search, $options: "i" } },
+        ],
+      }
       : {};
 
     // ✅ Populate user details & apply pagination + search

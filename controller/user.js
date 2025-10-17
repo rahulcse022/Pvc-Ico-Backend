@@ -15,6 +15,7 @@ const {
 } = require("../utils/emailService");
 const PrivateSale = require("../models/PrivateSale");
 const validateInput = require("../utils/validateInput");
+const { ADMIN_REFERRAL_CODE } = require("../utils/constant");
 
 const generateRandomUniqueAccountNumber = async () => {
   // generate 9 digit random unique account number
@@ -25,14 +26,14 @@ const generateRandomUniqueAccountNumber = async () => {
   const randomNumber = Math.floor(Math.random() * (max - min + 1)) + min;
 
   // Check if the account number already exists in the database
-  const existingUser = await User.findOne({ accountNumber: randomNumber });
+  const existingUser = await User.findOne({ accountNumber: randomNumber.toString() });
 
   // If the account number already exists, recursively generate a new one
   if (existingUser) {
     return generateRandomUniqueAccountNumber();
   }
 
-  return randomNumber;
+  return randomNumber.toString();
 };
 
 // Validate JWT token
@@ -70,13 +71,16 @@ exports.register = async (req, res) => {
   try {
     const { name, email, phone, password, referralCode } = req.body;
 
-    // Input validation
-    if (!name || !email || !phone || !password) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "All fields are required: full name, email, phone, and password",
-      });
+    // Input validation using validateInput utility
+    const validationError = validateInput({
+      name: { value: name, required: true, type: "string" },
+      email: { value: email, required: true, type: "string" },
+      phone: { value: phone, required: true, type: "string" },
+      password: { value: password, required: true, type: "string" },
+    });
+
+    if (validationError) {
+      return res.status(400).json(validationError);
     }
 
     // Validate email format
@@ -136,57 +140,58 @@ exports.register = async (req, res) => {
     // Validate referral code if provided
     let referrer = null;
     if (referralCode && referralCode.trim()) {
-      referrer = await User.findOne({
-        referralCode: referralCode.toUpperCase().trim(),
-      });
-      if (!referrer) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid referral code. Please check and try again.",
+      const cleanReferralCode = referralCode.toUpperCase().trim();
+
+      // Check if it's the admin referral code "PEARLVINE"
+      if (cleanReferralCode === ADMIN_REFERRAL_CODE) {
+        // For admin referral, we don't need to find a specific user
+        // Just set a flag to indicate it's an admin referral
+        referrer = {
+          _id: null, // No specific user ID for admin referral
+          name: "Pearlvine Admin",
+          referralCode: ADMIN_REFERRAL_CODE,
+          isAdminReferral: true,
+        };
+      } else {
+        // Check if it's a valid user referral code and the referrer is active
+        const foundReferrer = await User.findOne({
+          referralCode: cleanReferralCode,
+          isActiveReferral: true
         });
+
+        if (!foundReferrer) {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid referral code or referrer is not active. Please check and try again.",
+          });
+        }
+
+        referrer = foundReferrer;
       }
     }
 
-    // Generate unique referral code for new user
-    const crypto = require("crypto");
-    let userReferralCode;
-    let isUnique = false;
-    let attempts = 0;
-
-    while (!isUnique && attempts < 10) {
-      userReferralCode = crypto.randomBytes(4).toString("hex").toUpperCase();
-      const existingUser = await User.findOne({
-        referralCode: userReferralCode,
-      });
-      if (!existingUser) {
-        isUnique = true;
-      }
-      attempts++;
-    }
-
-    if (!isUnique) {
-      return res.status(500).json({
-        success: false,
-        message: "Error generating referral code. Please try again.",
-      });
-    }
 
     // Create new user
-    const user = new User({
+    const newUserData = {
       name: name.trim(),
       email: email.toLowerCase().trim(),
       phone: phone.trim(),
       accountNumber: await generateRandomUniqueAccountNumber(),
       password,
       role: "user",
-      referralCode: userReferralCode,
-      referredBy: referrer ? referrer._id : null,
-    });
+    };
+
+    // Only add referredBy if referrer exists and has a valid ID
+    if (referrer && referrer._id) {
+      newUserData.referredBy = referrer._id;
+    }
+
+    const user = new User(newUserData);
 
     await user.save();
 
-    // Update referrer's total referrals count if referral code was used
-    if (referrer) {
+    // Update referrer's total referrals count if referral code was used (only for user referrals, not admin)
+    if (referrer && referrer._id) {
       await User.findByIdAndUpdate(referrer._id, {
         $inc: { totalReferrals: 1 },
       });
@@ -269,16 +274,18 @@ exports.login = async (req, res) => {
   try {
     const { accountNumber, password } = req.body;
 
-    // Input validation
-    if (!accountNumber || !password) {
-      return res.status(400).json({
-        success: false,
-        message: "Account number and password are required",
-      });
+    // Input validation using validateInput utility
+    const validationError = validateInput({
+      accountNumber: { value: accountNumber, required: true, type: "string" },
+      password: { value: password, required: true, type: "string" },
+    });
+
+    if (validationError) {
+      return res.status(400).json(validationError);
     }
 
     // Check if user exists
-    const user = await User.findOne({ accountNumber, password });
+    const user = await User.findOne({ accountNumber: accountNumber.toString(), password });
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -330,11 +337,14 @@ exports.adminLogin = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: "Email and password are required",
-      });
+    // Input validation using validateInput utility
+    const validationError = validateInput({
+      email: { value: email, required: true, type: "string" },
+      password: { value: password, required: true, type: "string" },
+    });
+
+    if (validationError) {
+      return res.status(400).json(validationError);
     }
 
     const emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
@@ -398,12 +408,14 @@ exports.updateProfile = async (req, res) => {
     const { name, phone } = req.body;
     const userId = req.user.userId; // From JWT token
 
-    // Validation
-    if (!name || !phone) {
-      return res.status(400).json({
-        success: false,
-        message: "Full name and phone are required",
-      });
+    // Input validation using validateInput utility
+    const validationError = validateInput({
+      name: { value: name, required: true, type: "string" },
+      phone: { value: phone, required: true, type: "string" },
+    });
+
+    if (validationError) {
+      return res.status(400).json(validationError);
     }
 
     if (name.trim().length < 2) {
@@ -455,11 +467,15 @@ exports.updateProfile = async (req, res) => {
       });
     }
 
+    // Return user data (excluding password)
+    const userData = updatedUser.toObject();
+    delete userData.password;
+
     res.status(200).json({
       success: true,
       message: "Profile updated successfully",
       data: {
-        user: updatedUser.toObject(),
+        user: userData,
       },
     });
   } catch (error) {
@@ -552,16 +568,16 @@ exports.adminList = async (req, res) => {
     // ✅ Build search filter
     const searchFilter = search
       ? {
-          $or: [
-            { accountNumber: { $regex: Number(search), $options: "i" } },
-            { email: { $regex: search, $options: "i" } },
-          ],
-        }
+        $or: [
+          { accountNumber: { $regex: search, $options: "i" } },
+          { email: { $regex: search, $options: "i" } },
+        ],
+      }
       : {};
 
     // ✅ Fetch paginated data and populate user details
     const [users, total] = await Promise.all([
-      User.find(searchFilter).skip(skip).limit(limit).sort({ createdAt: -1 }),
+      User.find(searchFilter).skip(skip).limit(limit).sort({ createdAt: -1 }).select("-password"),
       User.countDocuments(searchFilter),
     ]);
 
@@ -628,10 +644,14 @@ exports.blockUnblockUser = async (req, res) => {
       });
     }
 
+    // Return user data (excluding password)
+    const userData = updatedUser.toObject();
+    delete userData.password;
+
     res.status(200).json({
       success: true,
       message: `User ${isSuspended ? "blocked" : "unblocked"} successfully`,
-      data: { user: updatedUser.toObject() },
+      data: { user: userData },
     });
   } catch (error) {
     console.error("Profile update error:", error);
@@ -649,12 +669,13 @@ exports.forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
 
-    // Input validation
-    if (!email) {
-      return res.status(400).json({
-        success: false,
-        message: "Email is required",
-      });
+    // Input validation using validateInput utility
+    const validationError = validateInput({
+      email: { value: email, required: true, type: "string" },
+    });
+
+    if (validationError) {
+      return res.status(400).json(validationError);
     }
 
     // Validate email format
@@ -722,12 +743,15 @@ exports.resetPassword = async (req, res) => {
   try {
     const { token, password, confirmPassword } = req.body;
 
-    // Input validation
-    if (!token || !password || !confirmPassword) {
-      return res.status(400).json({
-        success: false,
-        message: "Token, password, and confirm password are required",
-      });
+    // Input validation using validateInput utility
+    const validationError = validateInput({
+      token: { value: token, required: true, type: "string" },
+      password: { value: password, required: true, type: "string" },
+      confirmPassword: { value: confirmPassword, required: true, type: "string" },
+    });
+
+    if (validationError) {
+      return res.status(400).json(validationError);
     }
 
     if (password !== confirmPassword) {
@@ -810,11 +834,13 @@ exports.validateResetToken = async (req, res) => {
   try {
     const { token } = req.params;
 
-    if (!token) {
-      return res.status(400).json({
-        success: false,
-        message: "Reset token is required",
-      });
+    // Input validation using validateInput utility
+    const validationError = validateInput({
+      token: { value: token, required: true, type: "string" },
+    });
+
+    if (validationError) {
+      return res.status(400).json(validationError);
     }
 
     // Find the reset token

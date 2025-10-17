@@ -6,6 +6,7 @@ const {
   BANK_WITHDRAWAL_CHARGES,
   CRYPTO_WITHDRAWAL_CHARGES,
 } = require("../utils/constant");
+const validateInput = require("../utils/validateInput");
 
 // Get user's withdrawal history
 exports.getUserWithdrawals = async (req, res) => {
@@ -140,6 +141,15 @@ exports.getWithdrawalById = async (req, res) => {
     const userId = req.user.userId;
     const { withdrawalId } = req.params;
 
+    // Input validation using validateInput utility
+    const validationError = validateInput({
+      withdrawalId: { value: withdrawalId, required: true, type: "string", isMongoId: true },
+    });
+
+    if (validationError) {
+      return res.status(400).json(validationError);
+    }
+
     const withdrawal = await Withdraw.findOne({
       _id: withdrawalId,
       userId,
@@ -175,10 +185,14 @@ exports.createWithdrawal = async (req, res) => {
     const userId = req.user.userId;
     const { method, amount, bankDetails, cryptoDetails } = req.body;
 
-    if (!method || !amount) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Method and amount are required" });
+    // Input validation using validateInput utility
+    const validationError = validateInput({
+      method: { value: method, required: true, type: "string" },
+      amount: { value: amount, required: true, type: "number" },
+    });
+
+    if (validationError) {
+      return res.status(400).json(validationError);
     }
 
     if (amount < 1000) {
@@ -281,6 +295,16 @@ exports.updateWithdrawalStatus = async (req, res) => {
       return res
         .status(403)
         .json({ success: false, message: "Unauthorized access" });
+    }
+
+    // Input validation using validateInput utility
+    const validationError = validateInput({
+      withdrawalId: { value: withdrawalId, required: true, type: "string", isMongoId: true },
+      action: { value: action, required: true, type: "string" },
+    });
+
+    if (validationError) {
+      return res.status(400).json(validationError);
     }
 
     if (!["rejected", "approved"].includes(action)) {
