@@ -1,9 +1,13 @@
 const express = require("express");
 const cors = require("cors");
-const database = require("./config/database");
+const dotenv = require("dotenv");
 const User = require("./models/User"); // Import User model
 const appRoutes = require("./routes");
 const { ADMIN_REFERRAL_CODE } = require("./utils/constant");
+const connectDB = require("./config/database");
+
+// Load environment variables
+dotenv.config();
 
 const app = express();
 
@@ -13,11 +17,7 @@ const corsOptions = {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
 
-    const allowedOrigins = [
-      "*",
-      "http://localhost:3013",
-      "http://127.0.0.1:3013",
-    ];
+    const allowedOrigins = ["*"];
 
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
@@ -66,7 +66,11 @@ app.get("/check", (req, res) => {
 
 // Health check route
 app.get("/health", (req, res) => {
-  res.status(200).json({ status: "OK", message: "Server is running" });
+  res.status(200).json({
+    status: "OK",
+    message: "Server is running",
+    timestamp: new Date().toISOString()
+  });
 });
 
 // Error handling middleware
@@ -83,8 +87,7 @@ app.use((err, req, res, next) => {
 const startServer = async () => {
   try {
     // Connect to MongoDB
-    await database.connect();
-    console.log("Connected to MongoDB");
+    await connectDB();
 
     // Ensure default admin exists
     const adminExists = await User.findOne({ role: "admin" });
@@ -106,7 +109,7 @@ const startServer = async () => {
     }
 
     // Start Express server
-    const PORT = process.env.PORT || 3012;
+    const PORT = process.env.PORT || 5000;
     app.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
     });
