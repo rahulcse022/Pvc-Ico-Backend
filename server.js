@@ -17,7 +17,12 @@ const corsOptions = {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
 
-    const allowedOrigins = ["*"];
+    const allowedOrigins = [
+      "*",
+      "https://pearl-vine.com",
+      "https://admin.pearl-vine.com",
+      "http://localhost:5173",
+    ];
 
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
@@ -69,7 +74,7 @@ app.get("/health", (req, res) => {
   res.status(200).json({
     status: "OK",
     message: "Server is running",
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 });
 
@@ -94,13 +99,13 @@ const startServer = async () => {
     if (!adminExists) {
       const admin = new User({
         name: "Admin",
-        email: "admin@pvctrading.io",
+        email: "admin@pearl-vine.com",
         phone: "9999999999",
         password: "Admin@123", // Will be hashed by pre-save middleware
         role: "admin",
         referralCode: ADMIN_REFERRAL_CODE,
         isActiveReferral: true,
-        accountNumber: "123456789"
+        accountNumber: "123456789",
       });
       await admin.save();
       console.log("Default admin user created.");

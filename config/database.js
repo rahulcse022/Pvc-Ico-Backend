@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
-const MONGO_DB_URL = "mongodb://localhost:27017/pearlvine";
-
+const MONGO_DB_URL =
+  "mongodb+srv://rahul:rahul@cluster0.r1xuwdr.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0/pearlvine";
 
 const connectDB = async () => {
   try {
