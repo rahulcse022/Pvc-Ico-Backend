@@ -1,6 +1,5 @@
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
-const { JWT_TOKEN } = require("../env");
 const mongoose = require("mongoose");
 const StakingModel = require("../models/Staking");
 const User = require("../models/User");
@@ -205,7 +204,7 @@ exports.register = async (req, res) => {
     await wallet.save();
 
     // Generate JWT token
-    const token = jwt.sign({ userId: user._id, role: user.role }, JWT_TOKEN, {
+    const token = jwt.sign({ userId: user._id, role: user.role }, process.env.JWT_TOKEN, {
       expiresIn: "24h",
     });
 
@@ -294,7 +293,7 @@ exports.login = async (req, res) => {
     }
 
     // Generate JWT token
-    const token = jwt.sign({ userId: user._id, role: user.role }, JWT_TOKEN, {
+    const token = jwt.sign({ userId: user._id, role: user.role }, process.env.JWT_TOKEN, {
       expiresIn: "24h",
     });
 
@@ -374,7 +373,7 @@ exports.adminLogin = async (req, res) => {
       });
     }
 
-    const token = jwt.sign({ userId: user._id, role: user.role }, JWT_TOKEN, {
+    const token = jwt.sign({ userId: user._id, role: user.role }, process.env.JWT_TOKEN, {
       expiresIn: "24h",
     });
 

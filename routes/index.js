@@ -4,7 +4,6 @@ const privateSaleController = require("../controller/privateSaleController");
 const tokenPriceController = require("../controller/tokenPriceController");
 const referralController = require("../controller/referral");
 
-const { JWT_TOKEN } = require("../env");
 const jwt = require("jsonwebtoken");
 const express = require("express");
 const router = express();
@@ -21,7 +20,7 @@ const authenticateToken = (req, res, next) => {
     const tokenWithoutBearer = token.startsWith("Bearer ")
       ? token.slice(7, token.length)
       : token;
-    const decoded = jwt.verify(tokenWithoutBearer, JWT_TOKEN);
+    const decoded = jwt.verify(tokenWithoutBearer, process.env.JWT_TOKEN);
     req.user = decoded;
     next();
   } catch (err) {

@@ -1,5 +1,5 @@
-const mongoose = require('mongoose');
 const crypto = require('crypto');
+const connectDB = require('../config/database');
 const User = require('../models/User');
 
 // Generate unique referral code
@@ -9,9 +9,12 @@ const generateReferralCode = () => {
 
 const generateReferralCodesJob = async () => {
   try {
+    // Connect to database
+    await connectDB();
+    console.log('📊 Database connected for referral codes generation');
 
     // Find users without referral codes
-    const usersWithoutReferralCodes = await User.find({ 
+    const usersWithoutReferralCodes = await User.find({
       $or: [
         { referralCode: { $exists: false } },
         { referralCode: null },
@@ -55,6 +58,8 @@ const generateReferralCodesJob = async () => {
     console.log(`\nSummary:`);
     console.log(`- Successfully generated referral codes: ${successCount}`);
     console.log(`- Total users processed: ${usersWithoutReferralCodes.length}`);
+
+    console.log('📊 Database operations completed');
 
   } catch (error) {
     console.error("❌ Error running generate referral codes job:", error.message);

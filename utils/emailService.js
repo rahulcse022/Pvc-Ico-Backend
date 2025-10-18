@@ -1,21 +1,13 @@
 const nodemailer = require("nodemailer");
-const {
-  SMTP_HOST,
-  SMTP_PORT,
-  SMTP_USER,
-  SMTP_PASS,
-  FRONTEND_URL,
-  SMTP_FROM,
-} = require("../env");
 
 const createProductionTransporter = () => {
   return nodemailer.createTransport({
-    host: SMTP_HOST || "smtp.gmail.com",
-    port: SMTP_PORT || 587,
+    host: process.env.SMTP_HOST || "smtp.gmail.com",
+    port: process.env.SMTP_PORT || 587,
     secure: false,
     auth: {
-      user: SMTP_USER,
-      pass: SMTP_PASS,
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
     },
   });
 };
@@ -31,7 +23,7 @@ const sendWelcomeEmail = async (email, userName, password) => {
     const transporter = await getTransporter();
 
     const mailOptions = {
-      from: SMTP_FROM || '"PVCTrading" <noreply@pvctrading.io>',
+      from: process.env.SMTP_FROM || '"PVCTrading" <noreply@pvctrading.io>',
       to: email,
       subject: "Welcome to PVC Trade",
       html: `
@@ -54,7 +46,7 @@ const sendWelcomeEmail = async (email, userName, password) => {
             </p>
             
             <div style="text-align: center; margin: 30px 0;">
-              <a href="${FRONTEND_URL}" 
+              <a href="${process.env.FRONTEND_URL}" 
                  style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
                         color: white; 
                         padding: 15px 30px; 
@@ -106,10 +98,10 @@ const sendPasswordResetEmail = async (email, resetToken, userName) => {
   try {
     const transporter = await getTransporter();
 
-    const resetUrl = `${FRONTEND_URL}/reset-password?token=${resetToken}`;
+    const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
 
     const mailOptions = {
-      from: SMTP_FROM || '"PVCTrading" <noreply@pvctrading.io>',
+      from: process.env.SMTP_FROM || '"PVCTrading" <noreply@pvctrading.io>',
       to: email,
       subject: "Password Reset Request - PVCTrading",
       html: `
@@ -197,23 +189,15 @@ const sendPasswordResetConfirmationEmail = async (email, userName) => {
     const transporter = await getTransporter();
 
     const mailOptions = {
-      from: SMTP_FROM || '"PVC Trade" <noreply@pvctrading.io>',
+      from: process.env.SMTP_FROM,
       to: email,
       subject: "Password Reset Successful - PVC Trade",
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa;">
-          <div style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); padding: 30px; border-radius: 10px; text-align: center; margin-bottom: 20px;">
-            <h1 style="color: white; margin: 0; font-size: 28px;">PVC Trade</h1>
-            <p style="color: white; margin: 10px 0 0 0; font-size: 16px;">Password Reset Successful</p>
-          </div>
-          
-          <div style="background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa;">          <div style="background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
             <h2 style="color: #333; margin-bottom: 20px;">Hello ${userName},</h2>
-            
             <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
               Your password has been successfully reset. You can now log in to your PVC Trade account using your new password.
             </p>
-            
             <div style="background: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; padding: 20px; margin: 20px 0;">
               <p style="color: #155724; margin: 0; font-weight: bold;">
                 ✅ Your password has been updated successfully!

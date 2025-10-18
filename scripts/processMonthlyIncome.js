@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+const connectDB = require('../config/database');
 const MonthlyIncome = require('../models/MonthlyIncome');
 const Transaction = require('../models/Transactions');
 const User = require('../models/User');
@@ -62,6 +62,9 @@ const calculateMonthlyIncome = async (userId, month, year) => {
 // Process monthly income for all users
 const processMonthlyIncome = async (month, year) => {
   try {
+    // Connect to database
+    await connectDB();
+    console.log('📊 Database connected for monthly income processing');
     console.log(`Processing monthly income for ${month}/${year}...`);
 
     // Get all users
@@ -122,6 +125,8 @@ const processMonthlyIncome = async (month, year) => {
     console.log(`Monthly income processing completed for ${month}/${year}`);
     console.log(`Processed: ${processedCount} users`);
     console.log(`Total income distributed: ${totalIncomeDistributed} PVC`);
+
+    console.log('📊 Database operations completed');
 
     return {
       processedCount,
