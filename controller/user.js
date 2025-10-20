@@ -25,7 +25,9 @@ const generateRandomUniqueAccountNumber = async () => {
   const randomNumber = Math.floor(Math.random() * (max - min + 1)) + min;
 
   // Check if the account number already exists in the database
-  const existingUser = await User.findOne({ accountNumber: randomNumber.toString() });
+  const existingUser = await User.findOne({
+    accountNumber: randomNumber.toString(),
+  });
 
   // If the account number already exists, recursively generate a new one
   if (existingUser) {
@@ -155,20 +157,20 @@ exports.register = async (req, res) => {
         // Check if it's a valid user referral code and the referrer is active
         const foundReferrer = await User.findOne({
           referralCode: cleanReferralCode,
-          isActiveReferral: true
+          isActiveReferral: true,
         });
 
         if (!foundReferrer) {
           return res.status(400).json({
             success: false,
-            message: "Invalid referral code or referrer is not active. Please check and try again.",
+            message:
+              "Invalid referral code or referrer is not active. Please check and try again.",
           });
         }
 
         referrer = foundReferrer;
       }
     }
-
 
     // Create new user
     const newUserData = {
@@ -204,9 +206,13 @@ exports.register = async (req, res) => {
     await wallet.save();
 
     // Generate JWT token
-    const token = jwt.sign({ userId: user._id, role: user.role }, process.env.JWT_TOKEN, {
-      expiresIn: "24h",
-    });
+    const token = jwt.sign(
+      { userId: user._id, role: user.role },
+      process.env.JWT_TOKEN,
+      {
+        expiresIn: "24h",
+      }
+    );
 
     // Return user data (excluding password)
     const userData = user.toObject();
@@ -284,7 +290,10 @@ exports.login = async (req, res) => {
     }
 
     // Check if user exists
-    const user = await User.findOne({ accountNumber: accountNumber.toString(), password });
+    const user = await User.findOne({
+      accountNumber: accountNumber.toString(),
+      password,
+    });
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -293,9 +302,13 @@ exports.login = async (req, res) => {
     }
 
     // Generate JWT token
-    const token = jwt.sign({ userId: user._id, role: user.role }, process.env.JWT_TOKEN, {
-      expiresIn: "24h",
-    });
+    const token = jwt.sign(
+      { userId: user._id, role: user.role },
+      process.env.JWT_TOKEN,
+      {
+        expiresIn: "24h",
+      }
+    );
 
     // Return user data (excluding password)
     const userData = user.toObject();
@@ -357,7 +370,7 @@ exports.adminLogin = async (req, res) => {
     const user = await User.findOne({
       email: email.toLowerCase(),
       role: "admin",
-    });
+    }).select("+password");
 
     if (!user) {
       return res.status(401).json({
@@ -373,9 +386,13 @@ exports.adminLogin = async (req, res) => {
       });
     }
 
-    const token = jwt.sign({ userId: user._id, role: user.role }, process.env.JWT_TOKEN, {
-      expiresIn: "24h",
-    });
+    const token = jwt.sign(
+      { userId: user._id, role: user.role },
+      process.env.JWT_TOKEN,
+      {
+        expiresIn: "24h",
+      }
+    );
 
     const userData = user.toObject();
     delete userData.password;
@@ -567,16 +584,20 @@ exports.adminList = async (req, res) => {
     // ✅ Build search filter
     const searchFilter = search
       ? {
-        $or: [
-          { accountNumber: { $regex: search, $options: "i" } },
-          { email: { $regex: search, $options: "i" } },
-        ],
-      }
+          $or: [
+            { accountNumber: { $regex: search, $options: "i" } },
+            { email: { $regex: search, $options: "i" } },
+          ],
+        }
       : {};
 
     // ✅ Fetch paginated data and populate user details
     const [users, total] = await Promise.all([
-      User.find(searchFilter).skip(skip).limit(limit).sort({ createdAt: -1 }).select("-password"),
+      User.find(searchFilter)
+        .skip(skip)
+        .limit(limit)
+        .sort({ createdAt: -1 })
+        .select("-password"),
       User.countDocuments(searchFilter),
     ]);
 
@@ -746,7 +767,11 @@ exports.resetPassword = async (req, res) => {
     const validationError = validateInput({
       token: { value: token, required: true, type: "string" },
       password: { value: password, required: true, type: "string" },
-      confirmPassword: { value: confirmPassword, required: true, type: "string" },
+      confirmPassword: {
+        value: confirmPassword,
+        required: true,
+        type: "string",
+      },
     });
 
     if (validationError) {

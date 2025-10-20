@@ -56,8 +56,8 @@ exports.create = async (req, res) => {
       }
     }
 
-    const maturedAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes later
-    // this.maturedAt = new Date(stakedAt.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days later
+    // const maturedAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes later
+    const maturedAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days later
 
     const newStake = new StakingModel({
       userId,
@@ -79,6 +79,8 @@ exports.create = async (req, res) => {
       data: newStake,
     });
   } catch (error) {
+    console.log("Error creating staking:", error);
+
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -106,7 +108,12 @@ exports.getById = async (req, res) => {
 
     // Input validation using validateInput utility
     const validationError = validateInput({
-      stakingId: { value: stakingId, required: true, type: "string", isMongoId: true },
+      stakingId: {
+        value: stakingId,
+        required: true,
+        type: "string",
+        isMongoId: true,
+      },
     });
 
     if (validationError) {
@@ -138,7 +145,12 @@ exports.claim = async (req, res) => {
 
     // Input validation using validateInput utility
     const validationError = validateInput({
-      stakingId: { value: stakingId, required: true, type: "string", isMongoId: true },
+      stakingId: {
+        value: stakingId,
+        required: true,
+        type: "string",
+        isMongoId: true,
+      },
     });
 
     if (validationError) {
@@ -202,11 +214,11 @@ exports.adminList = async (req, res) => {
     // ✅ Build search filter
     const searchFilter = search
       ? {
-        $or: [
-          { "user.accountNumber": { $regex: search, $options: "i" } },
-          { "user.email": { $regex: search, $options: "i" } },
-        ],
-      }
+          $or: [
+            { "user.accountNumber": { $regex: search, $options: "i" } },
+            { "user.email": { $regex: search, $options: "i" } },
+          ],
+        }
       : {};
 
     // ✅ Populate user details & apply pagination + search
