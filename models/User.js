@@ -41,11 +41,6 @@ const userSchema = new mongoose.Schema(
       enum: ["user", "admin"],
       default: "user",
     },
-    referralCode: {
-      type: String,
-      unique: true,
-      sparse: true,
-    },
     referredBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

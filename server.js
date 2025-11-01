@@ -3,8 +3,8 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 const User = require("./models/User"); // Import User model
 const appRoutes = require("./routes");
-const { ADMIN_REFERRAL_CODE } = require("./utils/constant");
 const connectDB = require("./config/database");
+const { ACCOUNT_NUMBER } = require("./utils/constant");
 
 // Load environment variables
 dotenv.config();
@@ -101,11 +101,10 @@ const startServer = async () => {
         name: "Admin",
         email: "admin@pearl-vine.com",
         phone: "9999999999",
-        password: "Admin@123", // Will be hashed by pre-save middleware
+        password: "Tillu@0008", // Will be hashed by pre-save middleware
         role: "admin",
-        referralCode: ADMIN_REFERRAL_CODE,
         isActiveReferral: true,
-        accountNumber: "123456789",
+        accountNumber: ACCOUNT_NUMBER,
       });
       await admin.save();
       console.log("Default admin user created.");

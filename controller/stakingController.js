@@ -1,13 +1,7 @@
 const StakingModel = require("../models/Staking");
 const User = require("../models/User");
-const crypto = require("crypto");
 const { processReferralEarnings } = require("./referral");
 const validateInput = require("../utils/validateInput");
-
-// Generate unique referral code
-const generateReferralCode = () => {
-  return crypto.randomBytes(4).toString("hex").toUpperCase();
-};
 
 exports.create = async (req, res) => {
   try {
@@ -30,29 +24,12 @@ exports.create = async (req, res) => {
     const existingStakes = await StakingModel.find({ userId });
     const isFirstStake = existingStakes.length === 0;
 
-    // If first stake, generate referral code and mark as active referral
+    // If first stake, mark user as active referral
     if (isFirstStake) {
       const user = await User.findById(userId);
-      if (user && !user.referralCode) {
-        // Generate unique referral code
-        let referralCode;
-        let isUnique = false;
-        let attempts = 0;
-
-        while (!isUnique && attempts < 10) {
-          referralCode = generateReferralCode();
-          const existingUser = await User.findOne({ referralCode });
-          if (!existingUser) {
-            isUnique = true;
-          }
-          attempts++;
-        }
-
-        if (isUnique) {
-          user.referralCode = referralCode;
-          user.isActiveReferral = true;
-          await user.save();
-        }
+      if (user && !user.isActiveReferral) {
+        user.isActiveReferral = true;
+        await user.save();
       }
     }
 
@@ -214,11 +191,11 @@ exports.adminList = async (req, res) => {
     // ✅ Build search filter
     const searchFilter = search
       ? {
-          $or: [
-            { "user.accountNumber": { $regex: search, $options: "i" } },
-            { "user.email": { $regex: search, $options: "i" } },
-          ],
-        }
+        $or: [
+          { "user.accountNumber": { $regex: search, $options: "i" } },
+          { "user.email": { $regex: search, $options: "i" } },
+        ],
+      }
       : {};
 
     // ✅ Populate user details & apply pagination + search
