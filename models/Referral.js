@@ -14,8 +14,8 @@ const referralSchema = new mongoose.Schema({
     required: true,
     unique: true
   },
-  // Referral code used
-  referralCode: {
+
+  accountNumber: {
     type: String,
     required: true
   },
@@ -56,7 +56,7 @@ const referralSchema = new mongoose.Schema({
 // Add indexes for better query performance
 referralSchema.index({ referrerId: 1, level: 1 });
 referralSchema.index({ referredId: 1 });
-referralSchema.index({ referralCode: 1 });
+referralSchema.index({ accountNumber: 1 });
 
 const Referral = mongoose.model('Referral', referralSchema);
 

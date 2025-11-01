@@ -2,12 +2,12 @@ const User = require("../models/User");
 const Referral = require("../models/Referral");
 const ReferralEarnings = require("../models/ReferralEarnings");
 const validateInput = require("../utils/validateInput");
-const { ADMIN_REFERRAL_CODE } = require("../utils/constant");
+const { ACCOUNT_NUMBER } = require("../utils/constant");
 
-// Live validate referral code and return referrer details
+// Live validate referral code (account number) and return referrer details
 exports.validateReferralCode = async (req, res) => {
   try {
-    const { referralCode } = req.body;
+    const { referralCode } = req.body; // This is now an account number
 
     // Input validation using validateInput utility
     const validationError = validateInput({
@@ -18,18 +18,37 @@ exports.validateReferralCode = async (req, res) => {
       return res.status(400).json(validationError);
     }
 
-    const cleanReferralCode = referralCode.toUpperCase().trim();
+    const cleanAccountNumber = referralCode.trim();
 
-    // Check if referral code exists and referrer is active
+
+    // Check if it's the admin account number
+    if (cleanAccountNumber === ACCOUNT_NUMBER) {
+      return res.status(200).json({
+        success: true,
+        message: "Valid admin account number",
+        data: {
+          referrer: {
+            _id: null,
+            name: "Pearlvine Admin",
+            accountNumber: ACCOUNT_NUMBER,
+            isActiveReferral: true,
+          },
+          isValid: true,
+          isAdminReferral: true,
+        },
+      });
+    }
+
+    // Check if it's a valid user account number and the referrer is active
     const referrer = await User.findOne({
-      referralCode: cleanReferralCode,
+      accountNumber: cleanAccountNumber,
       isActiveReferral: true
     }).select("-password");
 
     if (!referrer) {
       return res.status(400).json({
         success: false,
-        message: "Invalid referral code or referrer is not active",
+        message: "Invalid account number or referrer is not active",
         data: {
           isValid: false,
           referrer: null,
@@ -40,7 +59,7 @@ exports.validateReferralCode = async (req, res) => {
     // Return referrer details
     res.status(200).json({
       success: true,
-      message: "Valid referral code",
+      message: "Valid account number",
       data: {
         referrer: {
           _id: referrer._id,
@@ -48,7 +67,6 @@ exports.validateReferralCode = async (req, res) => {
           email: referrer.email,
           phone: referrer.phone,
           accountNumber: referrer.accountNumber,
-          referralCode: referrer.referralCode,
           isActiveReferral: referrer.isActiveReferral,
         },
         isValid: true,
@@ -168,16 +186,16 @@ exports.getReferralDashboard = async (req, res) => {
     const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const currentMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
 
-    // Get total referrals count
-    const totalReferrals = await Referral.countDocuments({ referrerId: userId });
+    // Get total referrals count - users who have this user as their referrer
+    const totalReferrals = await User.countDocuments({ referredBy: userId });
 
     // Get active referrals count (users who have staked at least once)
-    const activeReferrals = await Referral.aggregate([
-      { $match: { referrerId: user._id } },
+    const activeReferrals = await User.aggregate([
+      { $match: { referredBy: user._id } },
       {
         $lookup: {
           from: "stakings",
-          localField: "referredId",
+          localField: "_id",
           foreignField: "userId",
           as: "stakes"
         }
@@ -239,9 +257,9 @@ exports.getReferralDashboard = async (req, res) => {
       });
     }
 
-    // Get recent referrals (last 10)
-    const recentReferrals = await Referral.find({ referrerId: userId })
-      .populate('referredId', 'name email createdAt')
+    // Get recent referrals (last 10) - users who have this user as their referrer
+    const recentReferrals = await User.find({ referredBy: userId })
+      .select('name email accountNumber createdAt')
       .sort({ createdAt: -1 })
       .limit(10);
 
@@ -256,7 +274,7 @@ exports.getReferralDashboard = async (req, res) => {
       message: "Referral dashboard fetched successfully",
       data: {
         // Basic info
-        referralCode: user.referralCode,
+        accountNumber: user.accountNumber,
         isActiveReferral: user.isActiveReferral,
 
         // Dashboard metrics
@@ -270,12 +288,11 @@ exports.getReferralDashboard = async (req, res) => {
 
         // Recent activity
         recentReferrals: recentReferrals.map(ref => ({
-          id: ref.referredId._id,
-          name: ref.referredId.name,
-          email: ref.referredId.email,
-          level: ref.level,
-          joinedAt: ref.referredId.createdAt,
-          status: ref.status
+          id: ref._id,
+          name: ref.name,
+          email: ref.email,
+          accountNumber: ref.accountNumber,
+          joinedAt: ref.createdAt
         })),
 
         recentEarnings: recentEarnings.map(earning => ({
@@ -341,7 +358,7 @@ exports.getReferralInfo = async (req, res) => {
       message: "Referral information fetched successfully",
       data: {
         user: {
-          referralCode: user.referralCode,
+          accountNumber: user.accountNumber,
           totalReferrals: user.totalReferrals,
           totalReferralEarnings: user.totalReferralEarnings,
         },

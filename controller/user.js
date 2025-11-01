@@ -14,27 +14,33 @@ const {
 } = require("../utils/emailService");
 const PrivateSale = require("../models/PrivateSale");
 const validateInput = require("../utils/validateInput");
-const { ADMIN_REFERRAL_CODE } = require("../utils/constant");
+const { ACCOUNT_NUMBER } = require("../utils/constant");
 
-const generateRandomUniqueAccountNumber = async () => {
-  // generate 9 digit random unique account number
-  const min = 100000000; // Minimum 9-digit number
-  const max = 999999999; // Maximum 9-digit number
+const generateSequentialAccountNumber = async () => {
 
-  // Generate a random 9-digit number
-  const randomNumber = Math.floor(Math.random() * (max - min + 1)) + min;
 
-  // Check if the account number already exists in the database
-  const existingUser = await User.findOne({
-    accountNumber: randomNumber.toString(),
-  });
+  // Find the highest account number in the database
+  // Convert accountNumber to number for proper sorting
+  const highestAccountUser = await User.findOne()
+    .sort({ accountNumber: -1 })
+    .select("accountNumber");
 
-  // If the account number already exists, recursively generate a new one
-  if (existingUser) {
-    return generateRandomUniqueAccountNumber();
+  if (!highestAccountUser || !highestAccountUser.accountNumber) {
+    // No users exist, start from the starting number
+    return ACCOUNT_NUMBER.toString();
   }
 
-  return randomNumber.toString();
+  // Parse the highest account number
+  const highestAccountNumber = parseInt(highestAccountUser.accountNumber, 10);
+
+  // If the highest account number is less than starting number, use starting number
+  if (highestAccountNumber < ACCOUNT_NUMBER) {
+    return ACCOUNT_NUMBER.toString();
+  }
+
+  // Increment by 1
+  const nextAccountNumber = highestAccountNumber + 1;
+  return nextAccountNumber.toString();
 };
 
 // Validate JWT token
@@ -138,25 +144,25 @@ exports.register = async (req, res) => {
       });
     }
 
-    // Validate referral code if provided
+    // Validate referral code (account number) if provided
     let referrer = null;
     if (referralCode && referralCode.trim()) {
-      const cleanReferralCode = referralCode.toUpperCase().trim();
+      const cleanReferralCode = referralCode.trim();
 
-      // Check if it's the admin referral code "PEARLVINE"
-      if (cleanReferralCode === ADMIN_REFERRAL_CODE) {
+
+      if (cleanReferralCode === ACCOUNT_NUMBER) {
         // For admin referral, we don't need to find a specific user
         // Just set a flag to indicate it's an admin referral
         referrer = {
           _id: null, // No specific user ID for admin referral
           name: "Pearlvine Admin",
-          referralCode: ADMIN_REFERRAL_CODE,
+          accountNumber: ACCOUNT_NUMBER,
           isAdminReferral: true,
         };
       } else {
-        // Check if it's a valid user referral code and the referrer is active
+        // Check if it's a valid user account number and the referrer is active
         const foundReferrer = await User.findOne({
-          referralCode: cleanReferralCode,
+          accountNumber: cleanReferralCode,
           isActiveReferral: true,
         });
 
@@ -164,7 +170,7 @@ exports.register = async (req, res) => {
           return res.status(400).json({
             success: false,
             message:
-              "Invalid referral code or referrer is not active. Please check and try again.",
+              "Invalid account number or referrer is not active. Please check and try again.",
           });
         }
 
@@ -172,12 +178,15 @@ exports.register = async (req, res) => {
       }
     }
 
+    // Generate sequential account number
+    const accountNumber = await generateSequentialAccountNumber();
+
     // Create new user
     const newUserData = {
       name: name.trim(),
       email: email.toLowerCase().trim(),
       phone: phone.trim(),
-      accountNumber: await generateRandomUniqueAccountNumber(),
+      accountNumber: accountNumber,
       password,
       role: "user",
     };
@@ -584,11 +593,11 @@ exports.adminList = async (req, res) => {
     // ✅ Build search filter
     const searchFilter = search
       ? {
-          $or: [
-            { accountNumber: { $regex: search, $options: "i" } },
-            { email: { $regex: search, $options: "i" } },
-          ],
-        }
+        $or: [
+          { accountNumber: { $regex: search, $options: "i" } },
+          { email: { $regex: search, $options: "i" } },
+        ],
+      }
       : {};
 
     // ✅ Fetch paginated data and populate user details
