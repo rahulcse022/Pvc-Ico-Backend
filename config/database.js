@@ -1,11 +1,10 @@
 const mongoose = require("mongoose");
-const MONGO_DB_URL = "mongodb+srv://ainnovalink:Rahul%407976@cluster0.jm9odxq.mongodb.net/pvc_ico?appName=Cluster0&retryWrites=true&w=majority"
-// "mongodb+srv://rahul:rahul@cluster0.r1xuwdr.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0/pearlvine";
+const dotenv = require("dotenv");
 
-// "uri": "mongodb+srv://ainnovalink:Rahul%407976@cluster0.jm9odxq.mongodb.net/pvc_trading?appName=Cluster0&retryWrites=true&w=majority",
-// 			"database": "pvc_trading",
+// Load environment variables
+dotenv.config();
 
-
+const MONGO_DB_URL = process.env.MONGO_DB_URL;
 const connectDB = async () => {
   try {
     await mongoose.connect(MONGO_DB_URL, {

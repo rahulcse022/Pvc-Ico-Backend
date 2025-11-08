@@ -166,8 +166,6 @@ exports.processReferralEarnings = async (stakerId, stakedAmount, stakingId) => {
 };
 
 
-
-
 // Get user's referral dashboard
 exports.getReferralDashboard = async (req, res) => {
   try {
@@ -186,16 +184,16 @@ exports.getReferralDashboard = async (req, res) => {
     const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const currentMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
 
-    // Get total referrals count - users who have this user as their referrer
-    const totalReferrals = await User.countDocuments({ referredBy: userId });
+    // Get total referrals count
+    const totalReferrals = await Referral.countDocuments({ referrerId: userId });
 
     // Get active referrals count (users who have staked at least once)
-    const activeReferrals = await User.aggregate([
-      { $match: { referredBy: user._id } },
+    const activeReferrals = await Referral.aggregate([
+      { $match: { referrerId: user._id } },
       {
         $lookup: {
           from: "stakings",
-          localField: "_id",
+          localField: "referredId",
           foreignField: "userId",
           as: "stakes"
         }
@@ -257,9 +255,9 @@ exports.getReferralDashboard = async (req, res) => {
       });
     }
 
-    // Get recent referrals (last 10) - users who have this user as their referrer
-    const recentReferrals = await User.find({ referredBy: userId })
-      .select('name email accountNumber createdAt')
+    // Get recent referrals (last 10)
+    const recentReferrals = await Referral.find({ referrerId: userId })
+      .populate('referredId', 'name email createdAt')
       .sort({ createdAt: -1 })
       .limit(10);
 
@@ -288,11 +286,12 @@ exports.getReferralDashboard = async (req, res) => {
 
         // Recent activity
         recentReferrals: recentReferrals.map(ref => ({
-          id: ref._id,
-          name: ref.name,
-          email: ref.email,
-          accountNumber: ref.accountNumber,
-          joinedAt: ref.createdAt
+          id: ref.referredId._id,
+          name: ref.referredId.name,
+          email: ref.referredId.email,
+          level: ref.level,
+          joinedAt: ref.referredId.createdAt,
+          status: ref.status
         })),
 
         recentEarnings: recentEarnings.map(earning => ({
@@ -436,5 +435,7 @@ exports.getReferralEarnings = async (req, res) => {
     });
   }
 };
+
+
 
 
