@@ -3,6 +3,7 @@ const stakingController = require("../controller/stakingController");
 const privateSaleController = require("../controller/privateSaleController");
 const tokenPriceController = require("../controller/tokenPriceController");
 const referralController = require("../controller/referral");
+const adminDashboardController = require("../controller/adminDashboardController");
 
 const jwt = require("jsonwebtoken");
 const express = require("express");
@@ -26,6 +27,17 @@ const authenticateToken = (req, res, next) => {
   } catch (err) {
     return res.status(400).json({ message: "Invalid or expired token" });
   }
+};
+
+// Middleware to check if user is admin
+const requireAdmin = (req, res, next) => {
+  if (!req.user || req.user.role !== "admin") {
+    return res.status(403).json({
+      success: false,
+      message: "Admin access required",
+    });
+  }
+  next();
 };
 
 router.post("/login", userController.login);
@@ -124,8 +136,13 @@ router.get(
   referralController.getReferralEarnings
 );
 
-
-
+// Admin Dashboard Statistics
+router.get(
+  "/admin/statistics",
+  authenticateToken,
+  requireAdmin,
+  adminDashboardController.getAdminStatistics
+);
 
 router.get("/dashboard", authenticateToken, userController.userDashboard);
 module.exports = router;
