@@ -34,7 +34,6 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: [true, "Password is required"],
       minlength: [6, "Password must be at least 6 characters long"],
-      select: false, // Optional: hides password by default when querying
     },
     role: {
       type: String,
@@ -73,18 +72,6 @@ const userSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-    toJSON: {
-      transform(doc, ret) {
-        delete ret.password; // remove password field
-        return ret;
-      },
-    },
-    toObject: {
-      transform(doc, ret) {
-        delete ret.password; // remove password field for .toObject() as well
-        return ret;
-      },
-    },
   }
 );
 
