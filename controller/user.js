@@ -17,8 +17,6 @@ const validateInput = require("../utils/validateInput");
 const { ACCOUNT_NUMBER } = require("../utils/constant");
 
 const generateSequentialAccountNumber = async () => {
-
-
   // Find the highest account number in the database
   // Convert accountNumber to number for proper sorting
   const highestAccountUser = await User.findOne()
@@ -148,7 +146,6 @@ exports.register = async (req, res) => {
     let referrer = null;
     if (referralCode && referralCode.trim()) {
       const cleanReferralCode = referralCode.trim();
-
 
       if (cleanReferralCode === ACCOUNT_NUMBER) {
         // For admin referral, we don't need to find a specific user
@@ -593,20 +590,16 @@ exports.adminList = async (req, res) => {
     // ✅ Build search filter
     const searchFilter = search
       ? {
-        $or: [
-          { accountNumber: { $regex: search, $options: "i" } },
-          { email: { $regex: search, $options: "i" } },
-        ],
-      }
+          $or: [
+            { accountNumber: { $regex: search, $options: "i" } },
+            { email: { $regex: search, $options: "i" } },
+          ],
+        }
       : {};
 
     // ✅ Fetch paginated data and populate user details
     const [users, total] = await Promise.all([
-      User.find(searchFilter)
-        .skip(skip)
-        .limit(limit)
-        .sort({ createdAt: -1 })
-        .select("-password"),
+      User.find(searchFilter).skip(skip).limit(limit).sort({ createdAt: -1 }),
       User.countDocuments(searchFilter),
     ]);
 
