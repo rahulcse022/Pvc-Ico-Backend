@@ -227,7 +227,7 @@ exports.register = async (req, res) => {
     // Send welcome email (skip for test users)
     if (!user.email.includes("@loadtest.com")) {
       try {
-        await sendWelcomeEmail(user.email, user.name, password);
+        await sendWelcomeEmail(user.email, user.name, password, accountNumber);
       } catch (emailError) {
         console.error("Email sending failed:", emailError);
       }
@@ -590,11 +590,11 @@ exports.adminList = async (req, res) => {
     // ✅ Build search filter
     const searchFilter = search
       ? {
-          $or: [
-            { accountNumber: { $regex: search, $options: "i" } },
-            { email: { $regex: search, $options: "i" } },
-          ],
-        }
+        $or: [
+          { accountNumber: { $regex: search, $options: "i" } },
+          { email: { $regex: search, $options: "i" } },
+        ],
+      }
       : {};
 
     // ✅ Fetch paginated data and populate user details

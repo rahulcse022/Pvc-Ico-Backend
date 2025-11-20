@@ -18,31 +18,31 @@ const getTransporter = async () => {
 };
 
 // Send password reset email
-const sendWelcomeEmail = async (email, userName, password) => {
+const sendWelcomeEmail = async (email, userName, password, accountNumber) => {
   try {
     const transporter = await getTransporter();
 
     const mailOptions = {
       from: process.env.SMTP_FROM || '"PVCTrading" <noreply@pvctrading.io>',
       to: email,
-      subject: "Welcome to PVC Trade",
+      subject: "Welcome to Pearlvine MYNT Token",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa;">
           <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px; text-align: center; margin-bottom: 20px;">
-            <h1 style="color: white; margin: 0; font-size: 28px;">PVC Trade</h1>
-            <p style="color: white; margin: 10px 0 0 0; font-size: 16px;">Welcome to PVC Trade</p>
+            <h1 style="color: white; margin: 0; font-size: 28px;">Pearlvine MYNT Token</h1>
+            <p style="color: white; margin: 10px 0 0 0; font-size: 16px;">Welcome to Pearlvine MYNT Token</p>
           </div>
           
           <div style="background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
             <h2 style="color: #333; margin-bottom: 20px;">Hello ${userName},</h2>
 
             <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-              <h3 style="color: #333; margin-bottom: 20px;">Username: <strong>${email}</strong></h3>
+              <h3 style="color: #333; margin-bottom: 20px;">Account Number: <strong>${accountNumber}</strong></h3>
               <h3 style="color: #333; margin-bottom: 20px;">Password: <strong>${password}</strong></h3>
             </div>
             
             <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
-              Thank you for signing up to PVC Trade. We are excited to have you on board.
+              Thank you for signing up to Pearlvine MYNT Token. We are excited to have you on board.
             </p>
             
             <div style="text-align: center; margin: 30px 0;">
@@ -65,20 +65,20 @@ const sendWelcomeEmail = async (email, userName, password) => {
           </div>
           
           <div style="text-align: center; margin-top: 20px; color: #999; font-size: 12px;">
-            <p>© 2025 PVC Trade. All rights reserved.</p>
+            <p>© 2025 Pearlvine MYNT Token. All rights reserved.</p>
           </div>
         </div>
       `,
       text: `
-        Welcome to PVC Trade
+        Welcome to Pearlvine MYNT Token
         
         Hello ${userName},
         
-        Thank you for signing up to PVC Trade. We are excited to have you on board.
+        Thank you for signing up to Pearlvine MYNT Token. We are excited to have you on board.
         
         Please login to your account to start trading.
         
-        © 2025 PVC Trade. All rights reserved.
+        © 2025 Pearlvine MYNT Token. All rights reserved.
       `,
     };
 
@@ -107,7 +107,7 @@ const sendPasswordResetEmail = async (email, resetToken, userName) => {
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa;">
           <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px; text-align: center; margin-bottom: 20px;">
-            <h1 style="color: white; margin: 0; font-size: 28px;">PVC Trade</h1>
+            <h1 style="color: white; margin: 0; font-size: 28px;">Pearlvine MYNT Token</h1>
             <p style="color: white; margin: 10px 0 0 0; font-size: 16px;">Password Reset Request</p>
           </div>
           
@@ -115,7 +115,7 @@ const sendPasswordResetEmail = async (email, resetToken, userName) => {
             <h2 style="color: #333; margin-bottom: 20px;">Hello ${userName},</h2>
             
             <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
-              We received a request to reset your password for your PVC Trade account. 
+              We received a request to reset your password for your Pearlvine MYNT Token account. 
               If you didn't make this request, you can safely ignore this email.
             </p>
             
@@ -147,17 +147,17 @@ const sendPasswordResetEmail = async (email, resetToken, userName) => {
           </div>
           
           <div style="text-align: center; margin-top: 20px; color: #999; font-size: 12px;">
-            <p>© 2024 PVC Trade. All rights reserved.</p>
+            <p>© 2024 Pearlvine MYNT Token. All rights reserved.</p>
             <p>If you have any questions, please contact our support team.</p>
           </div>
         </div>
       `,
       text: `
-        Password Reset Request - PVC Trade
+        Password Reset Request - Pearlvine MYNT Token
         
         Hello ${userName},
         
-        We received a request to reset your password for your PVC Trade account. 
+        We received a request to reset your password for your Pearlvine MYNT Token account. 
         If you didn't make this request, you can safely ignore this email.
         
         To reset your password, click the following link:
@@ -170,7 +170,7 @@ const sendPasswordResetEmail = async (email, resetToken, userName) => {
         Security Tip: Never share this email or the reset link with anyone. 
         Our team will never ask for your password or this reset link.
         
-        © 2024 PVC Trade. All rights reserved.
+        © 2024 Pearlvine MYNT Token. All rights reserved.
       `,
     };
 
@@ -191,12 +191,12 @@ const sendPasswordResetConfirmationEmail = async (email, userName) => {
     const mailOptions = {
       from: process.env.SMTP_FROM,
       to: email,
-      subject: "Password Reset Successful - PVC Trade",
+      subject: "Password Reset Successful - Pearlvine MYNT Token",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa;">          <div style="background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
             <h2 style="color: #333; margin-bottom: 20px;">Hello ${userName},</h2>
             <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
-              Your password has been successfully reset. You can now log in to your PVC Trade account using your new password.
+              Your password has been successfully reset. You can now log in to your Pearlvine MYNT Token account using your new password.
             </p>
             <div style="background: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; padding: 20px; margin: 20px 0;">
               <p style="color: #155724; margin: 0; font-weight: bold;">
@@ -218,17 +218,17 @@ const sendPasswordResetConfirmationEmail = async (email, userName) => {
           </div>
           
           <div style="text-align: center; margin-top: 20px; color: #999; font-size: 12px;">
-            <p>© 2024 PVC Trade. All rights reserved.</p>
+            <p>© 2024 Pearlvine MYNT Token. All rights reserved.</p>
             <p>If you have any questions, please contact our support team.</p>
           </div>
         </div>
       `,
       text: `
-        Password Reset Successful - PVC Trade
+        Password Reset Successful - Pearlvine MYNT Token
         
         Hello ${userName},
         
-        Your password has been successfully reset. You can now log in to your PVC Trade account using your new password.
+        Your password has been successfully reset. You can now log in to your Pearlvine MYNT Token account using your new password.
         
         If you did not request this password reset, please contact our support team immediately 
         as your account may have been compromised.
@@ -236,7 +236,7 @@ const sendPasswordResetConfirmationEmail = async (email, userName) => {
         Security Reminder: Keep your password secure and never share it with anyone. 
         Consider using a strong, unique password for your account.
         
-        © 2024 PVC Trade. All rights reserved.
+        © 2024 Pearlvine MYNT Token. All rights reserved.
       `,
     };
 
