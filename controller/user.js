@@ -216,7 +216,7 @@ exports.register = async (req, res) => {
       { userId: user._id, role: user.role },
       process.env.JWT_TOKEN,
       {
-        expiresIn: "24h",
+        expiresIn: "180d", // 6 months
       }
     );
 
@@ -312,7 +312,7 @@ exports.login = async (req, res) => {
       { userId: user._id, role: user.role },
       process.env.JWT_TOKEN,
       {
-        expiresIn: "24h",
+        expiresIn: "180d", // 6 months
       }
     );
 
@@ -396,7 +396,7 @@ exports.adminLogin = async (req, res) => {
       { userId: user._id, role: user.role },
       process.env.JWT_TOKEN,
       {
-        expiresIn: "24h",
+        expiresIn: "180d", // 6 months
       }
     );
 
